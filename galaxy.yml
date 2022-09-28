@@ -1,0 +1,17 @@
+---
+authors:
+  - Keith Resar (@KeithResar)
+dependencies: {}
+description: "Ansible Collection for Confluent Cloud"
+documentation: "https://docs.ansible.com/ansible/latest/collections/confluent/cloud/"
+homepage: "https://github.com/keithresar/ansible-collection-confluent-cloud"
+issues: "https://github.com/keithresar/ansible-collection-confluent-cloud/issues"
+license_file: COPYING
+name: cloud
+namespace: confluent
+readme: README.md
+repository: "https://github.com/keithresar/ansible-collection-confluent-cloud"
+tags:
+  - cloud
+  - confluent
+version: 0.0.1

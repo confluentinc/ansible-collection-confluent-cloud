@@ -1,0 +1,27 @@
+---
+
+- name: Exec ping succeed
+  confluent.cloud.ping:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+  register: result_success
+  check_mode: true
+
+- name: Verify test returned pong
+  ansible.builtin.assert:
+    that:
+      - result_success.ping=="pong"
+
+- name: Exec ping fail
+  confluent.cloud.ping:
+    api_key: 'xx'
+    api_secret: 'xxxx'
+  register: result_fail
+  ignore_errors: yes
+  check_mode: true
+
+- name: Verify test failed
+  ansible.builtin.assert:
+    that:
+      - result_fail is failed
+      - result_fail.fetch_url_info.status == 401

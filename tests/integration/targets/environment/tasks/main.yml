@@ -1,0 +1,52 @@
+---
+
+- name: Remove test environment if it already exists
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: 'integration-test-env'
+    state: absent
+
+- name: Create test environment
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: 'integration-test-env'
+    state: present
+  register: result_env
+- name: Verify environment created
+  ansible.builtin.assert:
+    that:
+      - result_env.id
+      - result_env.display_name=='integration-test-env'
+
+- name: Update test environment
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: 'integration-test-env-rename'
+    state: present
+  register: result
+- name: Verify environment renamed
+  ansible.builtin.assert:
+    that:
+      - result.display_name=='integration-test-env-rename'
+
+- name: Remove test environment
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: 'integration-test-env-rename'
+    state: absent
+- name: List target environments
+  confluent.cloud.environment_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    names:
+      - integration-test-env-rename
+  register: result
+  check_mode: true
+- name: Verify environment removed
+  ansible.builtin.assert:
+    that:
+      - result_env.id not in result
