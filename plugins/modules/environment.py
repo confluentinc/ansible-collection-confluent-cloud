@@ -115,7 +115,7 @@ def get_environments(module):
         resource_path="/org/v2/environments",
     )
 
-    resources = confluent.query({ 'page_size': 100 })
+    resources = confluent.query(data={ 'page_size': 100 })
     return(resources['data'])
 
 

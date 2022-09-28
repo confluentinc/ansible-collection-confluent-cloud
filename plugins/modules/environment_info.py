@@ -56,7 +56,7 @@ environments:
   returned: success
   type: dict
   contains:
-    dplay_name:
+    display_name:
       description: Environment name
       type: str
       returned: success
@@ -84,7 +84,7 @@ def get_environments_info(module):
         resource_path="/org/v2/environments",
     )
 
-    resources = confluent.query({ 'page_size': 100 })
+    resources = confluent.query(data={ 'page_size': 100 })
 
     if module.params.get('ids'):
         environments = [e for e in resources['data'] if e['id'] in module.params.get('ids')]
@@ -93,7 +93,7 @@ def get_environments_info(module):
     else:
         environments = resources['data']
 
-    return({e['id']: e for e in environments})
+    return({'environments': {e['id']: e for e in environments}})
 
 
 def main():

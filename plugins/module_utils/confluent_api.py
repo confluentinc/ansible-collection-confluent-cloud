@@ -139,12 +139,13 @@ class AnsibleConfluent:
 
     def api_query(self, path, method="GET", data=None):
 
+        params = ''
         if method == "GET" and data:
-            data_encoded = data.copy()
             try:
-                data = urllib.urlencode(data_encoded)
+                params = '?' + urllib.urlencode(data)
             except AttributeError:
-                data = urllib.parse.urlencode(data_encoded)
+                params = '?' + urllib.parse.urlencode(data)
+            data = None
         else:
             data = self.module.jsonify(data)
 
@@ -153,7 +154,7 @@ class AnsibleConfluent:
         for retry in range(0, self.module.params["api_retries"]):
             resp, info = fetch_url(
                 self.module,
-                self.module.params["api_endpoint"] + path,
+                self.module.params["api_endpoint"] + path + params,
                 method=method,
                 data=data,
                 headers=self.headers,
@@ -238,9 +239,9 @@ class AnsibleConfluent:
 #
 #        return dict()
 
-    def query(self,data=None):
+    def query(self,method="GET",data=None):
         # Returns a single dict representing the resource
-        resources = self.api_query(path=self.resource_path,data=data)
+        resources = self.api_query(path=self.resource_path, method=method, data=data)
         return(resources)
 
 #    def query_list(self, path=None, result_key=None, query_params=None):
