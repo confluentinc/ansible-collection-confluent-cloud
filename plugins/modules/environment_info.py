@@ -84,7 +84,7 @@ def get_environments_info(module):
         resource_path="/org/v2/environments",
     )
 
-    resources = confluent.query()
+    resources = confluent.query({ 'page_size': 100 })
 
     if module.params.get('ids'):
         environments = [e for e in resources['data'] if e['id'] in module.params.get('ids')]
