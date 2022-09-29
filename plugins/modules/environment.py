@@ -158,7 +158,7 @@ def main():
     try:
         module.exit_json(**environment_process(module))
     except Exception as e:
-        module.fail_json(msg='failed to get environment, error: %s' %
+        module.fail_json(msg='failed to process environment, error: %s' %
                          (to_native(e)), exception=traceback.format_exc())
 
 

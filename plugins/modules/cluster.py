@@ -11,36 +11,76 @@ __metaclass__ = type
 
 DOCUMENTATION = """
 ---
-module: cluster_info
-short_description: Get information on existing clusters
+module: cluster
+short_description: Manage Confluent Cloud clusters
 description:
-  - Enumerate and filter clusters within a Confluent Cloud environment.
+  - Manage Confluent Cloud clusters.
 version_added: "0.0.1"
 author: "Keith Resar (@keithresar)"
 extends_documentation_fragment:
   - confluent.cloud.confluent
 options:
-  environment:
+  id:
+    description: Cluster Id
+    type: str
+  name:
+    description: Cluster name
+    type: str
+  state:
     description:
-      - Environment Id
+      - If `absent`, the cluster and all objects (connectors, service accounts) will be removed.
+        Note that absent will not cause Cluster to fail if the Cluster does not exist.
+      - If `present`, the cluster will be created.
+    default: present
+    choices:
+      - absent
+      - present
+    type: str
+  environment:
+    description: The environment to which this belongs.
     type: str
     required: True
-  names:
-    description:
-      - List of cluster Names.
-      - Mutually exclusive when used with `ids`
-    type: list
-    elements: str
-  ids:
-    description:
-      - List of cluster Ids.
-      - Mutually exclusive when used with `names`
-    type: list
-    elements: str
+  availability:
+    description: The availability zone configuration of the cluster.
+    type: str
+    choices:
+      - SINGLE_ZONE
+      - MULTI_ZONE
+    default: SINGLE_ZONE
+  cloud:
+    description: The cloud service provider in which the cluster is running.
+    type: str
+    choices:
+      - AWS
+      - GCP
+      - AZURE
+    required: True
+  region:
+    description: The cloud service provider region where the cluster is running.
+    type: str
+    required: True
+  kind:
+    description: Cluster type
+    type: str
+    default: Basic
+    choices:
+      - Basic
+      - Standard
+      - Dedicated
+  cku:
+    description: 
+      - The number of Confluent Kafka Units (CKUs) for Dedicated cluster types. 
+      - MULTI_ZONE dedicated clusters must have at least two CKUs.
+    type: int
+    default: 1
+  network:
+    description: The network associated with this object.
+    type: str
+    required: True
 """
 
 EXAMPLES = """
-- name: List all available clusters in a given environment
+- name: TODO -List all available clusters in a given environment
   confluent.cloud.cluster_info:
     environment: env-f3a90de
 - name: List clusters that match the given Ids
@@ -169,42 +209,68 @@ from ansible.module_utils._text import to_native
 from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api import AnsibleConfluent, confluent_argument_spec
 
 
-def get_clusters_info(module):
+def get_clusters(module):
     confluent = AnsibleConfluent(
         module=module,
         resource_path="/cmk/v2/clusters",
     )
 
     resources = confluent.query(data={ 'environment': module.params.get('environment'), 'page_size': 100 })
+    return(resources['data'])
 
-    if module.params.get('ids'):
-        clusters = [c for c in resources['data'] if c['id'] in module.params.get('ids')]
-    elif module.params.get('names'):
-        clusters = [c for c in resources['data'] if c['spec']['display_name'] in module.params.get('names')]
+
+def cluster_process(module):
+    # Get existing cluster if it exists
+    clusters = get_clusters(module)
+
+    if module.params.get('id') and len([e for e in clusters if e['id'] in module.params.get('id')]):
+        cluster = [e for e in clusters if e['id'] in module.params.get('id')][0]
+    elif module.params.get('name') and len([e for e in clusters if e['spec']['display_name'] in module.params.get('name')]):
+        cluster = [e for e in clusters if e['spec']['display_name'] in module.params.get('name')][0]
     else:
-        clusters = resources['data']
+        cluster = None
 
-    return({'clusters': {c['id']: c for c in clusters}})
+    return({'cluster': cluster})
+
+    # Manage cluster removal
+    if module.params.get('state') == 'absent' and not cluster:
+        return({"changed": False})
+    elif module.params.get('state') == 'absent' and cluster:
+        return(cluster_remove(module, cluster['id']))
+
+    # Create cluster
+    elif module.params.get('state') == 'present' and not cluster:
+        return(cluster_create(module))
+
+    # Check for update
+    else:
+        return(cluster_update(module, cluster))
 
 
 def main():
     argument_spec = confluent_argument_spec()
+    argument_spec['id'] = dict(type='str')
+    argument_spec['name'] = dict(type='str')
+    argument_spec['state'] = dict(default='present', choices=['present', 'absent'])
     argument_spec['environment'] = dict(type='str', required=True)
-    argument_spec['ids'] = dict(type='list', elements='str')
-    argument_spec['names'] = dict(type='list', elements='str')
+    argument_spec['availability'] = dict(default='SINGLE_ZONE', choices=['SINGLE_ZONE', 'MULTI_ZONE'])
+    argument_spec['cloud'] = dict(type='str', choices=['AWS', 'GCP', 'AZURE'])
+    argument_spec['region'] = dict(type='str')
+    argument_spec['kind'] = dict(type='str', choices=['Basic', 'Standard', 'Dedicated'])
+    argument_spec['cku'] = dict(type='int', default=1)
+    argument_spec['network'] = dict(type='str')
 
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
-        mutually_exclusive=[
-            ('ids', 'names')
-        ]
+        required_if=(("state", "present", ("name","environment","availability","cloud","region","kind",)),
+                     ("kind", "Dedicated", ("cky","network",)),),
     )
 
     try:
-        module.exit_json(**get_clusters_info(module))
+        module.exit_json(**cluster_process(module))
     except Exception as e:
-        module.fail_json(msg='failed to get cluster info, error: %s' %
+        module.fail_json(msg='failed to process cluster, error: %s' %
                          (to_native(e)), exception=traceback.format_exc())
 
 
