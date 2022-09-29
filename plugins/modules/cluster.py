@@ -73,6 +73,12 @@ options:
       - MULTI_ZONE dedicated clusters must have at least two CKUs.
     type: int
     default: 1
+  encryption_key:
+    description: 
+      - The id of the encryption key that is used to encrypt the data in the Kafka cluster. (e.g. for Amazon Web Services, the Amazon Resource Name of the key).
+      - Only available for Dedicated clusters.
+    type: str
+    required: True
   network:
     description: The network associated with this object.
     type: str
@@ -219,6 +225,28 @@ def cluster_remove(module, resource_id):
     return(confluent.absent(data={ 'environment': module.params.get('environment') }))
 
 
+def cluster_create(module):
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/cmk/v2/clusters",
+    )
+
+    return(confluent.create({ 
+            'display_name': module.params.get('name') 
+            'availability': module.params.get('availability') 
+            'cloud': module.params.get('cloud') 
+            'region': module.params.get('region') 
+            'config': {
+                    'kind': module.params.get('kind') ,
+                    'cku': module.params.get('cku') ,
+                    'encryption_key': module.params.get('encryption_key') ,
+                },
+            'network': {
+                    'id': module.params.get('network') ,
+                },
+        }))
+
+
 def get_clusters(module):
     confluent = AnsibleConfluent(
         module=module,
@@ -267,6 +295,7 @@ def main():
     argument_spec['kind'] = dict(type='str', choices=['Basic', 'Standard', 'Dedicated'])
     argument_spec['cku'] = dict(type='int', default=1)
     argument_spec['network'] = dict(type='str')
+    argument_spec['encryption_key'] = dict(type='str')
 
     module = AnsibleModule(
         argument_spec=argument_spec,
