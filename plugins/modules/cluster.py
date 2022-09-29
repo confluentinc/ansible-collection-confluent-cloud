@@ -209,6 +209,16 @@ from ansible.module_utils._text import to_native
 from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api import AnsibleConfluent, confluent_argument_spec
 
 
+def cluster_remove(module, resource_id):
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/cmk/v2/clusters",
+        resource_key_id=resource_id
+    )
+
+    return(confluent.absent(data={ 'environment': module.params.get('environment') }))
+
+
 def get_clusters(module):
     confluent = AnsibleConfluent(
         module=module,
@@ -223,14 +233,12 @@ def cluster_process(module):
     # Get existing cluster if it exists
     clusters = get_clusters(module)
 
-    if module.params.get('id') and len([e for e in clusters if e['id'] in module.params.get('id')]):
+    if clusters and module.params.get('id') and len([e for e in clusters if e['id'] in module.params.get('id')]):
         cluster = [e for e in clusters if e['id'] in module.params.get('id')][0]
-    elif module.params.get('name') and len([e for e in clusters if e['spec']['display_name'] in module.params.get('name')]):
+    elif clusters and module.params.get('name') and len([e for e in clusters if e['spec']['display_name'] in module.params.get('name')]):
         cluster = [e for e in clusters if e['spec']['display_name'] in module.params.get('name')][0]
     else:
         cluster = None
-
-    return({'cluster': cluster})
 
     # Manage cluster removal
     if module.params.get('state') == 'absent' and not cluster:

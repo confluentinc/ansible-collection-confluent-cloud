@@ -140,7 +140,7 @@ class AnsibleConfluent:
     def api_query(self, path, method="GET", data=None):
 
         params = ''
-        if method == "GET" and data:
+        if method in ('GET','DELETE') and data:
             try:
                 params = '?' + urllib.urlencode(data)
             except AttributeError:
@@ -316,10 +316,11 @@ class AnsibleConfluent:
 
         return(resource)
 
-    def absent(self):
+    def absent(self, data=None):
         if not self.module.check_mode:
             self.api_query(
                 path="%s/%s" % (self.resource_path, self.resource_key_id),
                 method="DELETE",
+                data=data,
             )
         return({'changed': True, 'id': self.resource_key_id})

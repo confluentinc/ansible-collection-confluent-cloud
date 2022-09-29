@@ -177,9 +177,9 @@ def get_clusters_info(module):
 
     resources = confluent.query(data={ 'environment': module.params.get('environment'), 'page_size': 100 })
 
-    if module.params.get('ids'):
+    if resources and module.params.get('ids'):
         clusters = [c for c in resources['data'] if c['id'] in module.params.get('ids')]
-    elif module.params.get('names'):
+    elif resources and module.params.get('names'):
         clusters = [c for c in resources['data'] if c['spec']['display_name'] in module.params.get('names')]
     else:
         clusters = resources['data']

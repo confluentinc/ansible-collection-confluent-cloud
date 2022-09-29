@@ -85,7 +85,7 @@ def environment_remove(module, resource_id):
         resource_key_id=resource_id
     )
 
-    return(confluent.absent())
+    return(confluent.absent({ 'environment': module.params.get('environment') }))
 
 
 def environment_create(module):
@@ -94,7 +94,7 @@ def environment_create(module):
         resource_path="/org/v2/environments",
     )
 
-    return(confluent.create({'display_name': module.params.get('name')}))
+    return(confluent.create({ 'display_name': module.params.get('name') }))
 
 
 def environment_update(module, environment):
