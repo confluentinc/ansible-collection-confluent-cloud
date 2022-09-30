@@ -232,19 +232,50 @@ def cluster_create(module):
     )
 
     return(confluent.create({ 
-            'display_name': module.params.get('name') 
-            'availability': module.params.get('availability') 
-            'cloud': module.params.get('cloud') 
-            'region': module.params.get('region') 
-            'config': {
-                    'kind': module.params.get('kind') ,
-                    'cku': module.params.get('cku') ,
-                    'encryption_key': module.params.get('encryption_key') ,
-                },
-            'network': {
-                    'id': module.params.get('network') ,
+            'spec':  {
+                'display_name': module.params.get('name'),
+                'availability': module.params.get('availability'),
+                'cloud': module.params.get('cloud'),
+                'region': module.params.get('region'),
+                'config': {
+                        'kind': module.params.get('kind'),
+                        'cku': module.params.get('cku'),
+                        'encryption_key': module.params.get('encryption_key'),
+                    },
+                'environment': {
+                        'id': module.params.get('environment'),
+                    },
+                'network': {
+                        'id': module.params.get('network'),
+                    },
                 },
         }))
+
+
+def cluster_update(module, cluster):
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/cmk/v2/clusters",
+        resource_key_id=cluster['id']
+    )
+
+    return(confluent.update(cluster, {
+            'spec':  {
+                'display_name': module.params.get('name'),
+                'config': {
+                        'kind': module.params.get('kind'),
+                        #'kind': 'Standard',
+                        #'cku': module.params.get('cku'),
+                        #'encryption_key': module.params.get('encryption_key'),
+                    },
+                },
+    }, required = {
+            'spec':  {
+                'environment': {
+                        'id': module.params.get('environment'),
+                    },
+                },
+    }))
 
 
 def get_clusters(module):
