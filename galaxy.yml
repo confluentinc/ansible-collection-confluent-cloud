@@ -6,7 +6,7 @@ description: "Ansible Collection for Confluent Cloud"
 documentation: "https://docs.ansible.com/ansible/latest/collections/confluent/cloud/"
 homepage: "https://github.com/confluentinc/ansible-collection-confluent-cloud"
 issues: "https://github.com/confluentinc/ansible-collection-confluent-cloud"
-license_file: COPYING
+license_file: LICENSE
 name: cloud
 namespace: confluent
 readme: README.md
