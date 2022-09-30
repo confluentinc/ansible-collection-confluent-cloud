@@ -251,8 +251,10 @@ class AnsibleConfluent:
                     data=delta_state,
                 )
                 resource['changed'] = True
-
-        return(resource)
+            return(resource)
+        else:
+            cur_state['changed'] = False
+            return(cur_state)
 
     def absent(self, data=None):
         if not self.module.check_mode:
