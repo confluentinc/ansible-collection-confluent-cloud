@@ -24,7 +24,9 @@ options:
     description: Environment Id
     type: str
   name:
-    description: Environment name
+    description: 
+      - Environment name.
+      - Mutation after creation requires supplying the environment id.
     type: str
   state:
     description:

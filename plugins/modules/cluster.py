@@ -24,7 +24,9 @@ options:
     description: Cluster Id
     type: str
   name:
-    description: Cluster name
+    description: 
+      - Cluster name.
+      - Mutation after creation requires supplying the cluster id.
     type: str
   state:
     description:
@@ -37,18 +39,24 @@ options:
       - present
     type: str
   environment:
-    description: The environment to which this belongs.
+    description: 
+      - The environment to which this belongs.
+      - Immutable after deployment.
     type: str
     required: True
   availability:
-    description: The availability zone configuration of the cluster.
+    description: 
+      - The availability zone configuration of the cluster.
+      - Immutable after deployment.
     type: str
     choices:
       - SINGLE_ZONE
       - MULTI_ZONE
     default: SINGLE_ZONE
   cloud:
-    description: The cloud service provider in which the cluster is running.
+    description: 
+      - The cloud service provider in which the cluster is running.
+      - Immutable after deployment.
     type: str
     choices:
       - AWS
@@ -56,11 +64,15 @@ options:
       - AZURE
     required: True
   region:
-    description: The cloud service provider region where the cluster is running.
+    description: 
+      - The cloud service provider region where the cluster is running.
+      - Immutable after deployment.
     type: str
     required: True
   kind:
-    description: Cluster type
+    description: 
+      - Cluster type.
+      - Only Basic -> Standard changes are available after deployment.
     type: str
     default: Basic
     choices:
