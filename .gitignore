@@ -1,4 +1,4 @@
 *.sw?
 *.pyc
-python_310
-sratch
+python_*
+scratch
