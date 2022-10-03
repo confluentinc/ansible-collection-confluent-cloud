@@ -2,3 +2,6 @@
 *.pyc
 python_*
 scratch
+tests/integration/integration_config.yml
+tests/integration/inventory
+tests/output
