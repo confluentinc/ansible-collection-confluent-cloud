@@ -11,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = """
 ---
-module: api_keys_info
+module: api_key_info
 short_description: Get information on existing API keys accounts
 description:
   - Enumerate and filter API keys within a Confluent Cloud environment.
@@ -23,10 +23,10 @@ options:
   ids:
     description:
       - List of API keys filtered by Id
-      - Mutually exclusive when used with `names` or `owner`.
+      - Mutually exclusive when used with `names` or `owners`.
     type: list
     elements: str
-  owner:
+  owners:
     description:
       - The owner to which this API key belows
       - Mutually exclusive when used with `names` or `ids`.
@@ -35,29 +35,34 @@ options:
   names:
     description:
       - List of API keys filtered by name.
-      - Mutually exclusive when used with `ids` or `owner`.
+      - Mutually exclusive when used with `ids` or `owners`.
     type: list
     elements: str
 """
 
 EXAMPLES = """
-TODO- name: List all service accounts in the Confluent Cloud org
-  confluent.cloud.service_account_info:
-- name: List service accounts that match the given Ids
-  confluent.cloud.service_account_info:
+- name: List all API keys in the Confluent Cloud org
+  confluent.cloud.api_keys_info:
+- name: List API keys that match the given Ids
+  confluent.cloud.api_keys_info:
     ids:
-      - sa-lz51vz
-      - sa-logpdp
-- name: List service accounts that match the given Names
-  confluent.cloud.service_account_info:
+      - YU6F4EODE4OXXYD4
+      - FL2Z7WMXO5KJOPZY
+- name: List API keys that match the given Names
+  confluent.cloud.api_keys_info:
     names:
       - application_1
+- name: List API keys that match the given Owner
+  confluent.cloud.api_keys_info:
+    owners:
+      - u-lgyjxv
+      - u-ld9ok7
 """
 
 RETURN = """
 ---
-TODO api_keys:
-  description: Dictionary of matching users, keyed by user id
+api_keys:
+  description: Dictionary of matching API keys, keyed by API key id
   returned: success
   type: dict
   contains:
@@ -126,7 +131,7 @@ def get_api_keys_info(module):
     api_keys = []
     for a in api_keys_raw:
         a['name'] = a['spec']['display_name']
-        a.update({k:a['spec'][k] for k in a['spec'].keys() if k in ('description', 'owner', 'secret' )})
+        a.update({k: a['spec'][k] for k in a['spec'].keys() if k in ('description', 'owner', 'secret')})
         del(a['spec'])
         api_keys.append(a)
 
@@ -136,14 +141,14 @@ def get_api_keys_info(module):
 def main():
     argument_spec = confluent_argument_spec()
     argument_spec['ids'] = dict(type='list', elements='str')
-    argument_spec['owner'] = dict(type='list', elements='str')
+    argument_spec['owners'] = dict(type='list', elements='str')
     argument_spec['names'] = dict(type='list', elements='str')
 
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ('ids', 'owner', 'names')
+            ('ids', 'owners', 'names')
         ]
     )
 
