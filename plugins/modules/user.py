@@ -55,12 +55,10 @@ EXAMPLES = """
     id: u-j31z28
     state: present
 - name: Delete user (by id)
-  confluent.cloud.cluster_info:
   confluent.cloud.user:
     id: u-j31z28
     state: absent
 - name: Delete user (by email)
-  confluent.cloud.cluster_info:
   confluent.cloud.user:
     email: john.smith@example.com
     state: absent
