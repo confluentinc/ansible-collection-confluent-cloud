@@ -1,0 +1,6 @@
+---
+
+- name: List all service accounts
+  confluent.cloud.service_account_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'

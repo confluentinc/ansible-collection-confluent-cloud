@@ -1,0 +1,31 @@
+---
+
+- name: Invite / create user
+  confluent.cloud.user:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    email: kresar+ansible-integration-test@confluent.io
+    state: present
+  register: invite_result
+
+- name: List all users
+  confluent.cloud.user_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+  register: list_result
+
+- name: Remove invited user
+  confluent.cloud.user:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ invite_result.id }}"
+    state: absent
+  register: remove_result
+
+- name: Verify users
+  ansible.builtin.assert:
+    that:
+      - invite_result.id in list_result.users
+      - invite_result.changed
+      - list_result
+      - remove_result.changed

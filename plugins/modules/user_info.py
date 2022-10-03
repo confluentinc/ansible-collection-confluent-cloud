@@ -36,7 +36,7 @@ options:
     elements: str
   ids:
     description:
-      - List of users filtered by full name.
+      - List of users filtered by Id.
       - Mutually exclusive when used with `names` or `emails`.
     type: list
     elements: str
