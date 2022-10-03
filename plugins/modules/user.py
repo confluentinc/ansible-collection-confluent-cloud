@@ -14,7 +14,9 @@ DOCUMENTATION = """
 module: user
 short_description: Manage existing Confluent Cloud users
 description:
-  - Manage existing Confluent Cloud users.
+  - Manage existing Confluent Cloud users within a Confluent Cloud environment.
+  - Includes named users already setup and those who are invited by not yet activate.
+  - Note this is different than service accounts which uses its own module.
 version_added: "0.0.1"
 author: "Keith Resar (@keithresar)"
 extends_documentation_fragment:
@@ -27,6 +29,7 @@ options:
     description: 
       - User's full name
       - Mutation after creation requires supplying the user id.
+      - Mutation requires authentication with Cloud API keys owned this the user being changed
     type: str
   state:
     description:
@@ -94,10 +97,17 @@ from ansible.module_utils._text import to_native
 from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api import AnsibleConfluent, confluent_argument_spec
 
 
-def user_remove(module, resource_id):
+def user_remove(module, user):
+    if user['kind'] == 'Invitation':  
+        resource_id = user['invitation']
+        resource_path = "/iam/v2/invitations"
+    else:  
+        resource_id = user['id']
+        resource_path = "/iam/v2/users"
+
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/iam/v2/users",
+        resource_path=resource_path,
         resource_key_id=resource_id
     )
 
@@ -107,39 +117,55 @@ def user_remove(module, resource_id):
 def user_update(module, user):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/cmk/v2/users",
+        resource_path="/iam/v2/users",
         resource_key_id=user['id']
     )
 
     return(confluent.update(user, {
-            'spec':  {
-                'display_name': module.params.get('name'),
-                'config': {
-                        'kind': module.params.get('kind'),
-                        #'kind': 'Standard',
-                        #'cku': module.params.get('cku'),
-                        #'encryption_key': module.params.get('encryption_key'),
-                    },
-                },
-    }, required = {
-            'spec':  {
-                'environment': {
-                        'id': module.params.get('environment'),
-                    },
-                },
+            'full_name': module.params.get('name'),
     }))
 
+
+def user_create(module):
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/iam/v2/invitations",
+    )
+
+    response = confluent.create({
+            'email': module.params.get('email'),
+        })
+
+    if 'user' in response:
+        response['full_name'] = None
+        response['invitation'] = response['id']
+        response['id'] = response['user']['id']
+
+    return(response)
 
 def get_users(module):
     confluent = AnsibleConfluent(
         module=module,
         resource_path="/iam/v2/users",
     )
+    users_resources = confluent.query(data={ 'page_size': 100 })
+    resources = []
+    if 'data' in users_resources:
+        resources = users_resources['data']
 
-    resources = confluent.query(data={ 'page_size': 100 })
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/iam/v2/invitations",
+    )
+    invitations_resources = confluent.query(data={ 'page_size': 100 })
+    if 'data' in invitations_resources:
+        for user in invitations_resources['data']:
+            user['full_name'] = None
+            user['invitation'] = user['id']
+            user['id'] = user['user']['id']
+            resources.append(user)
 
-    if 'data' in resources:  return(resources['data'])
-    else:  return([])
+    return(resources)
 
 
 def user_process(module):
@@ -157,15 +183,15 @@ def user_process(module):
     if module.params.get('state') == 'absent' and not user:
         return({"changed": False})
     elif module.params.get('state') == 'absent' and user:
-        return(user_remove(module, user['id']))
+        return(user_remove(module, user))
 
     # Create user
-    #elif module.params.get('state') == 'present' and not user:
-    #    return(user_create(module))
+    elif module.params.get('state') == 'present' and not user:
+        return(user_create(module))
 
     # Check for update
-    #else:
-    #    return(user_update(module, user))
+    else:
+        return(user_update(module, user))
 
 
 def main():

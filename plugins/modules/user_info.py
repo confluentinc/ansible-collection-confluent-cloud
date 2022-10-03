@@ -15,6 +15,8 @@ module: user_info
 short_description: Get information on existing users
 description:
   - Enumerate and filter users within a Confluent Cloud environment.
+  - Includes named users already setup and those who are invited by not yet activate.
+  - Note this is different than service accounts which uses its own module.
 version_added: "0.0.1"
 author: "Keith Resar (@keithresar)"
 extends_documentation_fragment:
@@ -98,19 +100,32 @@ def get_users_info(module):
     confluent = AnsibleConfluent(
         module=module,
         resource_path="/iam/v2/users",
-
     )
+    users_resources = confluent.query(data={ 'page_size': 100 })
+    resources = []
+    if 'data' in users_resources:
+        resources = users_resources['data']
 
-    resources = confluent.query(data={ 'page_size': 100 })
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/iam/v2/invitations",
+    )
+    invitations_resources = confluent.query(data={ 'page_size': 100 })
+    if 'data' in invitations_resources:
+        for user in invitations_resources['data']:
+            user['full_name'] = None
+            user['invitation'] = user['id']
+            user['id'] = user['user']['id']
+            resources.append(user)
 
     if resources and module.params.get('ids'):
-        users = [u for u in resources['data'] if u['id'] in module.params.get('ids')]
+        users = [u for u in resources if u['id'] in module.params.get('ids')]
     elif resources and module.params.get('emails'):
-        users = [u for u in resources['data'] if u['email'] in module.params.get('emails')]
+        users = [u for u in resources if u['email'] in module.params.get('emails')]
     elif resources and module.params.get('names'):
-        users = [u for u in resources['data'] if u['full_name'] in module.params.get('names')]
+        users = [u for u in resources if u['full_name'] in module.params.get('names')]
     else:
-        users = resources['data']
+        users = resources
 
     return({'users': {u['id']: u for u in users}})
 
