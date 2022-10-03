@@ -12,9 +12,9 @@ __metaclass__ = type
 DOCUMENTATION = """
 ---
 module: user
-short_description: Manage Confluent Cloud users
+short_description: Manage existing Confluent Cloud users
 description:
-  - Manage Confluent Cloud clusters.
+  - Manage existing Confluent Cloud users.
 version_added: "0.0.1"
 author: "Keith Resar (@keithresar)"
 extends_documentation_fragment:
@@ -47,126 +47,44 @@ options:
 """
 
 EXAMPLES = """
-- name: TODO -List all available clusters in a given environment
+- name: Update existing user name
+  confluent.cloud.user:
+    name: John Smith
+    id: u-j31z28
+    state: present
+- name: Delete user (by id)
   confluent.cloud.cluster_info:
-    environment: env-f3a90de
-- name: List clusters that match the given Ids
+  confluent.cloud.user:
+    id: u-j31z28
+    state: absent
+- name: Delete user (by email)
   confluent.cloud.cluster_info:
-    environment: env-f3a90de
-    ids:
-      - lkc-6wkr2
-      - lkc-310rw
-- name: List clusters that match the given Names
-  confluent.cloud.cluster_info:
-    environment: env-f3a90de
-    names:
-      - test
-      - production
+  confluent.cloud.user:
+    email: john.smith@example.com
+    state: absent
 """
 
 RETURN = """
 ---
-clusters:
-  description: TODO Dictionary of matching clusters, keyed by cluster id
+id:
+  description: User id
+  type: str
   returned: success
+  sample: u-j31z28
+email:
+  description: User email
+  type: str
+  returned: success
+  sample: john.smith@example.com
+name:
+  description: User full name
+  type: str
+  returned: success
+  sample: John Smith
+metadata:
+  description: Cluster metadata, including create timestamp and updated timestamp
   type: dict
-  contains:
-    id:
-      description: Cluster id
-      type: str
-      returned: success
-      sample: lkc-7yxkd2
-    metadata:
-      description: Cluster metadata, including create timestamp and updated timestamp
-      type: dict
-      returned: success
-    spec:
-      description: Cluster spec
-      type: dict
-      returned: success
-      contains:
-        display_name:
-          description: The name of the cluster
-          type: str
-          returned: success
-        api_endpoint:
-          description: API endpoint
-          type: str
-          returned: success
-          sample: https://pkac-4nd3z.us-west4.gcp.confluent.cloud
-        http_endpoint:
-          description: The cluster HTTP request UR
-          type: str
-          returned: success
-          sample: https://pkc-lzvrd.us-west4.gcp.confluent.cloud:443
-        kafka_bootstrap_endpoint:
-          description: The bootstrap endpoint used by Kafka clients to connect to the cluster
-          type: str
-          returned: success
-          sample: SASL_SSL://pkc-lzvrd.us-west4.gcp.confluent.cloud:9092
-        availability:
-          description: The availability zone configuration of the cluster
-          type: str
-          returned: success
-          sample: SINGLE_ZONE
-        cloud:
-          description: The cloud service provider in which the cluster is running (AWS, GCP, AZURE)
-          type: str
-          returned: success
-          sample: AWS
-        region:
-          description: The cloud service provider region where the cluster is running
-          type: str
-          returned: success
-          sample: us-west4
-        config:
-          description: The configuration of the Kafka cluster.
-          type: dict
-          returned: success
-          contains:
-            kind:
-              description: The configuration of the Kafka cluster.
-              type: str
-              returned: success
-              sample: Basic
-        environment:
-          description: The environment to which this belongs
-          type: dict
-          returned: success
-          contains:
-            id:
-              description: Id of the referred resource
-              type: str
-              returned: success
-              sample: env-12m16j
-        network:
-          description: The network associated with this object
-          type: dict
-          returned: success
-          contains:
-            id:
-              description: Id of the referred resource
-              type: str
-              returned: success
-            environment:
-              description: Environment of the referred resource, if env-scoped
-              type: str
-              returned: success
-        status:
-          description: The status of the cluster
-          type: dict
-          returned: success
-          contains:
-            phase:
-              description: The lifecyle phase of the cluster: PROVISIONED: cluster is provisioned; PROVISIONING: cluster provisioning is in progress; FAILED: provisioning failed
-              type: str
-              returned: success
-              sample: PROVISIONED
-            cku:
-              description: The number of Confluent Kafka Units (CKUs) the Dedicated cluster currently has
-              type: int
-              returned: success
-              sample: 1
+  returned: success
 """
 
 import traceback
