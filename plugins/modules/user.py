@@ -21,78 +21,27 @@ extends_documentation_fragment:
   - confluent.cloud.confluent
 options:
   id:
-    description: Cluster Id
+    description: User Id
     type: str
   name:
     description: 
-      - Cluster name.
-      - Mutation after creation requires supplying the cluster id.
+      - User's full name
+      - Mutation after creation requires supplying the user id.
     type: str
   state:
     description:
-      - If `absent`, the cluster and all objects (connectors, service accounts) will be removed.
-        Note that absent will not cause Cluster to fail if the Cluster does not exist.
-      - If `present`, the cluster will be created.
+      - If `absent`, the user will be removed.
+        Note that absent will not cause User to fail if the User does not exist.
+      - If `present`, the user will be invited.
     default: present
     choices:
       - absent
       - present
     type: str
-  environment:
+  email:
     description: 
-      - The environment to which this belongs.
+      - The user's email address.
       - Immutable after deployment.
-    type: str
-    required: True
-  availability:
-    description: 
-      - The availability zone configuration of the cluster.
-      - Immutable after deployment.
-    type: str
-    choices:
-      - SINGLE_ZONE
-      - MULTI_ZONE
-    default: SINGLE_ZONE
-  cloud:
-    description: 
-      - The cloud service provider in which the cluster is running.
-      - Immutable after deployment.
-    type: str
-    choices:
-      - AWS
-      - GCP
-      - AZURE
-    required: True
-  region:
-    description: 
-      - The cloud service provider region where the cluster is running.
-      - Immutable after deployment.
-    type: str
-    required: True
-  kind:
-    description: 
-      - Cluster type.
-      - Only Basic -> Standard changes are available after deployment.
-    type: str
-    default: Basic
-    choices:
-      - Basic
-      - Standard
-      - Dedicated
-  cku:
-    description: 
-      - The number of Confluent Kafka Units (CKUs) for Dedicated cluster types. 
-      - MULTI_ZONE dedicated clusters must have at least two CKUs.
-    type: int
-    default: 1
-  encryption_key:
-    description: 
-      - The id of the encryption key that is used to encrypt the data in the Kafka cluster. (e.g. for Amazon Web Services, the Amazon Resource Name of the key).
-      - Only available for Dedicated clusters.
-    type: str
-    required: True
-  network:
-    description: The network associated with this object.
     type: str
     required: True
 """

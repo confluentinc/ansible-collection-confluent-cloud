@@ -41,7 +41,6 @@ options:
 """
 
 EXAMPLES = """
-TODO
 - name: List all users in the Confluent Cloud org
   confluent.cloud.user_info:
 - name: List users that match the given Ids
@@ -63,106 +62,29 @@ TODO
 RETURN = """
 ---
 users:
-  description: TODO Dictionary of matching users, keyed by user id
+  description: Dictionary of matching users, keyed by user id
   returned: success
   type: dict
   contains:
     id:
-      description: Cluster id
+      description: User id
       type: str
       returned: success
-      sample: lkc-7yxkd2
+      sample: u-j31z28
+    email:
+      description: The user's email address
+      type: str
+      returned: success
+      sample: john.smith@example.com
+    full_name:
+      description: The user's full name
+      type: str
+      returned: success
+      sample: John Smith
     metadata:
-      description: Cluster metadata, including create timestamp and updated timestamp
+      description: User metadata, including create timestamp and updated timestamp
       type: dict
       returned: success
-    spec:
-      description: Cluster spec
-      type: dict
-      returned: success
-      contains:
-        display_name:
-          description: The name of the user
-          type: str
-          returned: success
-        api_endpoint:
-          description: API endpoint
-          type: str
-          returned: success
-          sample: https://pkac-4nd3z.us-west4.gcp.confluent.cloud
-        http_endpoint:
-          description: The user HTTP request UR
-          type: str
-          returned: success
-          sample: https://pkc-lzvrd.us-west4.gcp.confluent.cloud:443
-        kafka_bootstrap_endpoint:
-          description: The bootstrap endpoint used by Kafka clients to connect to the user
-          type: str
-          returned: success
-          sample: SASL_SSL://pkc-lzvrd.us-west4.gcp.confluent.cloud:9092
-        availability:
-          description: The availability zone configuration of the user
-          type: str
-          returned: success
-          sample: SINGLE_ZONE
-        cloud:
-          description: The cloud service provider in which the user is running (AWS, GCP, AZURE)
-          type: str
-          returned: success
-          sample: AWS
-        region:
-          description: The cloud service provider region where the user is running
-          type: str
-          returned: success
-          sample: us-west4
-        config:
-          description: The configuration of the Kafka user.
-          type: dict
-          returned: success
-          contains:
-            kind:
-              description: The configuration of the Kafka user.
-              type: str
-              returned: success
-              sample: Basic
-        environment:
-          description: The environment to which this belongs
-          type: dict
-          returned: success
-          contains:
-            id:
-              description: Id of the referred resource
-              type: str
-              returned: success
-              sample: env-12m16j
-        network:
-          description: The network associated with this object
-          type: dict
-          returned: success
-          contains:
-            id:
-              description: Id of the referred resource
-              type: str
-              returned: success
-            environment:
-              description: Environment of the referred resource, if env-scoped
-              type: str
-              returned: success
-        status:
-          description: The status of the user
-          type: dict
-          returned: success
-          contains:
-            phase:
-              description: The lifecyle phase of the user: PROVISIONED: user is provisioned; PROVISIONING: user provisioning is in progress; FAILED: provisioning failed
-              type: str
-              returned: success
-              sample: PROVISIONED
-            cku:
-              description: The number of Confluent Kafka Units (CKUs) the Dedicated user currently has
-              type: int
-              returned: success
-              sample: 1
 """
 
 import traceback
