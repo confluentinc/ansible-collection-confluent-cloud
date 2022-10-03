@@ -24,7 +24,7 @@ options:
     description: Cluster Id
     type: str
   name:
-    description: 
+    description:
       - Cluster name.
       - Mutation after creation requires supplying the cluster id.
     type: str
@@ -39,13 +39,13 @@ options:
       - present
     type: str
   environment:
-    description: 
+    description:
       - The environment to which this belongs.
       - Immutable after deployment.
     type: str
     required: True
   availability:
-    description: 
+    description:
       - The availability zone configuration of the cluster.
       - Immutable after deployment.
     type: str
@@ -54,7 +54,7 @@ options:
       - MULTI_ZONE
     default: SINGLE_ZONE
   cloud:
-    description: 
+    description:
       - The cloud service provider in which the cluster is running.
       - Immutable after deployment.
     type: str
@@ -62,15 +62,13 @@ options:
       - AWS
       - GCP
       - AZURE
-    required: True
   region:
-    description: 
+    description:
       - The cloud service provider region where the cluster is running.
       - Immutable after deployment.
     type: str
-    required: True
   kind:
-    description: 
+    description:
       - Cluster type.
       - Only Basic -> Standard changes are available after deployment.
     type: str
@@ -80,21 +78,19 @@ options:
       - Standard
       - Dedicated
   cku:
-    description: 
-      - The number of Confluent Kafka Units (CKUs) for Dedicated cluster types. 
+    description:
+      - The number of Confluent Kafka Units (CKUs) for Dedicated cluster types.
       - MULTI_ZONE dedicated clusters must have at least two CKUs.
     type: int
     default: 1
   encryption_key:
-    description: 
+    description:
       - The id of the encryption key that is used to encrypt the data in the Kafka cluster. (e.g. for Amazon Web Services, the Amazon Resource Name of the key).
       - Only available for Dedicated clusters.
     type: str
-    required: True
   network:
     description: The network associated with this object.
     type: str
-    required: True
 """
 
 EXAMPLES = """
@@ -208,7 +204,11 @@ spec:
       returned: success
       contains:
         phase:
-          description: The lifecyle phase of the cluster: PROVISIONED: cluster is provisioned; PROVISIONING: cluster provisioning is in progress; FAILED: provisioning failed
+          description:
+            - "The lifecyle phase of the cluster:"
+            - "PROVISIONED: cluster is provisioned;"
+            - "PROVISIONING: cluster provisioning is in progress;"
+            - "FAILED: provisioning failed"
           type: str
           returned: success
           sample: PROVISIONED
@@ -233,7 +233,7 @@ def cluster_remove(module, resource_id):
         resource_key_id=resource_id
     )
 
-    return(confluent.absent(data={ 'environment': module.params.get('environment') }))
+    return(confluent.absent(data={'environment': module.params.get('environment')}))
 
 
 def cluster_create(module):
@@ -242,25 +242,25 @@ def cluster_create(module):
         resource_path="/cmk/v2/clusters",
     )
 
-    return(confluent.create({ 
-            'spec':  {
-                'display_name': module.params.get('name'),
-                'availability': module.params.get('availability'),
-                'cloud': module.params.get('cloud'),
-                'region': module.params.get('region'),
-                'config': {
-                        'kind': module.params.get('kind'),
-                        'cku': module.params.get('cku'),
-                        'encryption_key': module.params.get('encryption_key'),
-                    },
-                'environment': {
-                        'id': module.params.get('environment'),
-                    },
-                'network': {
-                        'id': module.params.get('network'),
-                    },
-                },
-        }))
+    return(confluent.create({
+        'spec': {
+            'display_name': module.params.get('name'),
+            'availability': module.params.get('availability'),
+            'cloud': module.params.get('cloud'),
+            'region': module.params.get('region'),
+            'config': {
+                'kind': module.params.get('kind'),
+                'cku': module.params.get('cku'),
+                'encryption_key': module.params.get('encryption_key'),
+            },
+            'environment': {
+                'id': module.params.get('environment'),
+            },
+            'network': {
+                'id': module.params.get('network'),
+            },
+        },
+    }))
 
 
 def cluster_update(module, cluster):
@@ -271,21 +271,20 @@ def cluster_update(module, cluster):
     )
 
     return(confluent.update(cluster, {
-            'spec':  {
-                'display_name': module.params.get('name'),
-                'config': {
-                        'kind': module.params.get('kind'),
-                        #'kind': 'Standard',
-                        #'cku': module.params.get('cku'),
-                        #'encryption_key': module.params.get('encryption_key'),
-                    },
-                },
-    }, required = {
-            'spec':  {
-                'environment': {
-                        'id': module.params.get('environment'),
-                    },
-                },
+        'spec': {
+            'display_name': module.params.get('name'),
+            'config': {
+                'kind': module.params.get('kind'),
+                'cku': module.params.get('cku'),
+                'encryption_key': module.params.get('encryption_key'),
+            },
+        },
+    }, required={
+        'spec': {
+            'environment': {
+                'id': module.params.get('environment'),
+            },
+        },
     }))
 
 
@@ -295,10 +294,12 @@ def get_clusters(module):
         resource_path="/cmk/v2/clusters",
     )
 
-    resources = confluent.query(data={ 'environment': module.params.get('environment'), 'page_size': 100 })
+    resources = confluent.query(data={'environment': module.params.get('environment'), 'page_size': 100})
 
-    if 'data' in resources:  return(resources['data'])
-    else:  return([])
+    if 'data' in resources:
+        return(resources['data'])
+    else:
+        return([])
 
 
 def cluster_process(module):
@@ -336,16 +337,16 @@ def main():
     argument_spec['availability'] = dict(default='SINGLE_ZONE', choices=['SINGLE_ZONE', 'MULTI_ZONE'])
     argument_spec['cloud'] = dict(type='str', choices=['AWS', 'GCP', 'AZURE'])
     argument_spec['region'] = dict(type='str')
-    argument_spec['kind'] = dict(type='str', choices=['Basic', 'Standard', 'Dedicated'])
+    argument_spec['kind'] = dict(type='str', default='Basic', choices=['Basic', 'Standard', 'Dedicated'])
     argument_spec['cku'] = dict(type='int', default=1)
     argument_spec['network'] = dict(type='str')
-    argument_spec['encryption_key'] = dict(type='str')
+    argument_spec['encryption_key'] = dict(type='str', no_log=False)
 
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
-        required_if=(("state", "present", ("name","environment","availability","cloud","region","kind",)),
-                     ("kind", "Dedicated", ("cky","network",)),),
+        required_if=(("state", "present", ("name", "environment", "availability", "cloud", "region", "kind",)),
+                     ("kind", "Dedicated", ("cku", "network",)),),
     )
 
     try:

@@ -24,7 +24,7 @@ options:
     description: Environment Id
     type: str
   name:
-    description: 
+    description:
       - Environment name.
       - Mutation after creation requires supplying the environment id.
     type: str
@@ -87,7 +87,7 @@ def environment_remove(module, resource_id):
         resource_key_id=resource_id
     )
 
-    return(confluent.absent({ 'environment': module.params.get('environment') }))
+    return(confluent.absent({'environment': module.params.get('environment')}))
 
 
 def environment_create(module):
@@ -96,7 +96,7 @@ def environment_create(module):
         resource_path="/org/v2/environments",
     )
 
-    return(confluent.create({ 'display_name': module.params.get('name') }))
+    return(confluent.create({'display_name': module.params.get('name')}))
 
 
 def environment_update(module, environment):
@@ -117,10 +117,12 @@ def get_environments(module):
         resource_path="/org/v2/environments",
     )
 
-    resources = confluent.query(data={ 'page_size': 100 })
+    resources = confluent.query(data={'page_size': 100})
 
-    if 'data' in resources:  return(resources['data'])
-    else:  return([])
+    if 'data' in resources:
+        return(resources['data'])
+    else:
+        return([])
 
 
 def environment_process(module):

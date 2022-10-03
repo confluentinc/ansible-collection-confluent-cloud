@@ -151,7 +151,11 @@ clusters:
           returned: success
           contains:
             phase:
-              description: The lifecyle phase of the cluster: PROVISIONED: cluster is provisioned; PROVISIONING: cluster provisioning is in progress; FAILED: provisioning failed
+              description:
+                - "The lifecyle phase of the cluster:"
+                - "PROVISIONED: cluster is provisioned;"
+                - "PROVISIONING: cluster provisioning is in progress;"
+                - "FAILED: provisioning failed"
               type: str
               returned: success
               sample: PROVISIONED
@@ -175,7 +179,7 @@ def get_clusters_info(module):
         resource_path="/cmk/v2/clusters",
     )
 
-    resources = confluent.query(data={ 'environment': module.params.get('environment'), 'page_size': 100 })
+    resources = confluent.query(data={'environment': module.params.get('environment'), 'page_size': 100})
 
     if resources and module.params.get('ids'):
         clusters = [c for c in resources['data'] if c['id'] in module.params.get('ids')]

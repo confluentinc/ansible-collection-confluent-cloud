@@ -26,7 +26,7 @@ options:
     description: User Id
     type: str
   name:
-    description: 
+    description:
       - User's full name
       - Mutation after creation requires supplying the user id.
       - Mutation requires authentication with Cloud API keys owned this the user being changed
@@ -42,11 +42,10 @@ options:
       - present
     type: str
   email:
-    description: 
+    description:
       - The user's email address.
       - Immutable after deployment.
     type: str
-    required: True
 """
 
 EXAMPLES = """
@@ -98,10 +97,10 @@ from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api impo
 
 
 def user_remove(module, user):
-    if user['kind'] == 'Invitation':  
+    if user['kind'] == 'Invitation':
         resource_id = user['invitation']
         resource_path = "/iam/v2/invitations"
-    else:  
+    else:
         resource_id = user['id']
         resource_path = "/iam/v2/users"
 
@@ -122,7 +121,7 @@ def user_update(module, user):
     )
 
     return(confluent.update(user, {
-            'full_name': module.params.get('name'),
+        'full_name': module.params.get('name'),
     }))
 
 
@@ -133,8 +132,8 @@ def user_create(module):
     )
 
     response = confluent.create({
-            'email': module.params.get('email'),
-        })
+        'email': module.params.get('email'),
+    })
 
     if 'user' in response:
         response['full_name'] = None
@@ -143,12 +142,13 @@ def user_create(module):
 
     return(response)
 
+
 def get_users(module):
     confluent = AnsibleConfluent(
         module=module,
         resource_path="/iam/v2/users",
     )
-    users_resources = confluent.query(data={ 'page_size': 100 })
+    users_resources = confluent.query(data={'page_size': 100})
     resources = []
     if 'data' in users_resources:
         resources = users_resources['data']
@@ -157,7 +157,7 @@ def get_users(module):
         module=module,
         resource_path="/iam/v2/invitations",
     )
-    invitations_resources = confluent.query(data={ 'page_size': 100 })
+    invitations_resources = confluent.query(data={'page_size': 100})
     if 'data' in invitations_resources:
         for user in invitations_resources['data']:
             user['full_name'] = None
@@ -172,10 +172,10 @@ def user_process(module):
     # Get existing user if it exists
     users = get_users(module)
 
-    if module.params.get('id') and len([u for u in users if u['id']==module.params.get('id')]):
-        user = [u for u in users if u['id']==module.params.get('id')][0]
-    elif module.params.get('email') and len([u for u in users if u['email']==module.params.get('email')]):
-        user = [u for u in users if u['email']==module.params.get('email')][0]
+    if module.params.get('id') and len([u for u in users if u['id'] == module.params.get('id')]):
+        user = [u for u in users if u['id'] == module.params.get('id')][0]
+    elif module.params.get('email') and len([u for u in users if u['email'] == module.params.get('email')]):
+        user = [u for u in users if u['email'] == module.params.get('email')][0]
     else:
         user = None
 

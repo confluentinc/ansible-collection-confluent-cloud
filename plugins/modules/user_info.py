@@ -101,7 +101,7 @@ def get_users_info(module):
         module=module,
         resource_path="/iam/v2/users",
     )
-    users_resources = confluent.query(data={ 'page_size': 100 })
+    users_resources = confluent.query(data={'page_size': 100})
     resources = []
     if 'data' in users_resources:
         resources = users_resources['data']
@@ -110,7 +110,7 @@ def get_users_info(module):
         module=module,
         resource_path="/iam/v2/invitations",
     )
-    invitations_resources = confluent.query(data={ 'page_size': 100 })
+    invitations_resources = confluent.query(data={'page_size': 100})
     if 'data' in invitations_resources:
         for user in invitations_resources['data']:
             user['full_name'] = None

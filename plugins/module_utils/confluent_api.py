@@ -138,7 +138,7 @@ class AnsibleConfluent:
 
     def api_query(self, path, method="GET", data=None):
         params = ''
-        if method in ('GET','DELETE') and data:
+        if method in ('GET', 'DELETE') and data:
             try:
                 params = '?' + urllib.urlencode(data)
             except AttributeError:
@@ -187,7 +187,7 @@ class AnsibleConfluent:
             fetch_url_info=info,
         )
 
-    def query(self,method="GET",data=None):
+    def query(self, method="GET", data=None):
         # Returns a single dict representing the resource
         resources = self.api_query(path=self.resource_path, method=method, data=data)
         return(resources)
@@ -212,7 +212,7 @@ class AnsibleConfluent:
             if key not in tgt:
                 tgt[key] = val
                 continue
-    
+
             if isinstance(val, dict):
                 if not isinstance(tgt[key], dict):
                     continue
@@ -224,13 +224,14 @@ class AnsibleConfluent:
     def _delta_state(self, cur, target):
         delta = {}
         for key, val in target.items():
-            if key not in cur:  
+            if key not in cur:
                 delta[key] = val
-            elif isinstance(target[key],(float, int, str, list, tuple)) and cur[key] != val:
+            elif isinstance(target[key], (float, int, str, list, tuple)) and cur[key] != val:
                 delta[key] = val
             elif isinstance(val, dict):
                 o = self._delta_state(cur[key], val)
-                if len(o.keys()):  delta[key] = o
+                if len(o.keys()):
+                    delta[key] = o
         return(delta)
 
     def update(self, cur_state, target_state, required=None):
@@ -240,7 +241,8 @@ class AnsibleConfluent:
 
         if len(delta_state.keys()):
             resource['changed'] = True
-            if required: delta_state = self._merge_dicts(delta_state,required)
+            if required:
+                delta_state = self._merge_dicts(delta_state, required)
 
         if resource["changed"]:
             if not self.module.check_mode:
