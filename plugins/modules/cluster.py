@@ -298,7 +298,7 @@ def get_clusters(module):
     resources = confluent.query(data={ 'environment': module.params.get('environment'), 'page_size': 100 })
 
     if 'data' in resources:  return(resources['data'])
-    else:  return({})
+    else:  return([])
 
 
 def cluster_process(module):

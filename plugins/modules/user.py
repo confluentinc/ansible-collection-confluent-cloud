@@ -97,11 +97,11 @@ from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api impo
 def user_remove(module, resource_id):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/cmk/v2/users",
+        resource_path="/iam/v2/users",
         resource_key_id=resource_id
     )
 
-    return(confluent.absent(data={ 'environment': module.params.get('environment') }))
+    return(confluent.absent())
 
 
 def user_update(module, user):
@@ -133,31 +133,31 @@ def user_update(module, user):
 def get_users(module):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/cmk/v2/users",
+        resource_path="/iam/v2/users",
     )
 
     resources = confluent.query(data={ 'page_size': 100 })
 
     if 'data' in resources:  return(resources['data'])
-    else:  return({})
+    else:  return([])
 
 
 def user_process(module):
     # Get existing user if it exists
     users = get_users(module)
 
-    if users and module.params.get('id'):
-        user = [u for u in users['data'] if u['id']==module.params.get('id')][0]
-    elif users and module.params.get('email') and len([u for u in users['data'] if u['email']==module.params.get('email')]):
-        user = [u for u in users['data'] if u['email']==module.params.get('email')][0]
+    if module.params.get('id') and len([u for u in users if u['id']==module.params.get('id')]):
+        user = [u for u in users if u['id']==module.params.get('id')][0]
+    elif module.params.get('email') and len([u for u in users if u['email']==module.params.get('email')]):
+        user = [u for u in users if u['email']==module.params.get('email')][0]
     else:
         user = None
 
     # Manage user removal
     if module.params.get('state') == 'absent' and not user:
         return({"changed": False})
-    #elif module.params.get('state') == 'absent' and user:
-    #    return(user_remove(module, user['id']))
+    elif module.params.get('state') == 'absent' and user:
+        return(user_remove(module, user['id']))
 
     # Create user
     #elif module.params.get('state') == 'present' and not user:
