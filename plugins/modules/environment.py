@@ -118,7 +118,9 @@ def get_environments(module):
     )
 
     resources = confluent.query(data={ 'page_size': 100 })
-    return(resources['data'])
+
+    if 'data' in resources:  return(resources['data'])
+    else:  return({})
 
 
 def environment_process(module):
