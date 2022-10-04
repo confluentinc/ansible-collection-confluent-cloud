@@ -96,6 +96,21 @@ api_keys:
           type: str
           returned: success
           sample: User
+    resource:
+      description: cmk.v2.Cluster id (or null if not associated with a resource).
+      type: dict
+      returned: success
+      contains:
+        id:
+          description: Id for the resource
+          type: str
+          returned: success
+          sample: lkc-c29js0
+        kind:
+          description: Kind of resource
+          type: str
+          returned: success
+          sample: User
     metadata:
       description: User metadata, including create timestamp and updated timestamp
       type: dict
@@ -131,7 +146,7 @@ def get_api_keys_info(module):
     api_keys = []
     for a in api_keys_raw:
         a['name'] = a['spec']['display_name']
-        a.update({k: a['spec'][k] for k in a['spec'].keys() if k in ('description', 'owner', 'secret')})
+        a.update({k: a['spec'][k] for k in a['spec'].keys() if k in ('description', 'owner', 'resource', 'secret')})
         del(a['spec'])
         api_keys.append(a)
 
