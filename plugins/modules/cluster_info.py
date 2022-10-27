@@ -60,7 +60,7 @@ EXAMPLES = """
 RETURN = """
 ---
 clusters:
-  description: TODO Dictionary of matching clusters, keyed by cluster id
+  description: Dictionary of matching clusters, keyed by cluster id
   returned: success
   type: dict
   contains:
@@ -69,6 +69,11 @@ clusters:
       type: str
       returned: success
       sample: lkc-7yxkd2
+    resource_uri:
+      description: Globally unique URI for resource
+      type: str
+      returned: success
+      sample: crn://confluent.cloud/organization=6830dbfe-5057-4e65-ae2e-f6a090640ec0/environment=env-nvm8yz
     metadata:
       description: Cluster metadata, including create timestamp and updated timestamp
       type: dict
@@ -173,6 +178,12 @@ from ansible.module_utils._text import to_native
 from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api import AnsibleConfluent, confluent_argument_spec
 
 
+def canonical_resource(resource):
+    resource['resource_uri'] = resource['metadata']['resource_name']
+    del(resource['metadata']['resource_name'])
+    return(resource)
+
+
 def get_clusters_info(module):
     confluent = AnsibleConfluent(
         module=module,
@@ -188,7 +199,7 @@ def get_clusters_info(module):
     else:
         clusters = resources['data']
 
-    return({'clusters': {c['id']: c for c in clusters}})
+    return({'clusters': {c['id']: canonical_resource(c) for c in clusters}})
 
 
 def main():

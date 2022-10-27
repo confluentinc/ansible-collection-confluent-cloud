@@ -122,6 +122,11 @@ id:
   type: str
   returned: success
   sample: lkc-7yxkd2
+resource_uri:
+  description: Globally unique URI for resource
+  type: str
+  returned: success
+  sample: crn://confluent.cloud/organization=6830dbfe-5057-4e65-ae2e-f6a090640ec0/environment=env-nvm8yz
 metadata:
   description: Cluster metadata, including create timestamp and updated timestamp
   type: dict
@@ -226,6 +231,12 @@ from ansible.module_utils._text import to_native
 from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api import AnsibleConfluent, confluent_argument_spec
 
 
+def canonical_resource(resource):
+    resource['resource_uri'] = resource['metadata']['resource_name']
+    del(resource['metadata']['resource_name'])
+    return(resource)
+
+
 def cluster_remove(module, resource_id):
     confluent = AnsibleConfluent(
         module=module,
@@ -242,7 +253,7 @@ def cluster_create(module):
         resource_path="/cmk/v2/clusters",
     )
 
-    return(confluent.create({
+    return(canonical_resource(confluent.create({
         'spec': {
             'display_name': module.params.get('name'),
             'availability': module.params.get('availability'),
@@ -260,7 +271,7 @@ def cluster_create(module):
                 'id': module.params.get('network'),
             },
         },
-    }))
+    })))
 
 
 def cluster_update(module, cluster):
@@ -270,7 +281,7 @@ def cluster_update(module, cluster):
         resource_key_id=cluster['id']
     )
 
-    return(confluent.update(cluster, {
+    return(canonical_resource(confluent.update(cluster, {
         'spec': {
             'display_name': module.params.get('name'),
             'config': {
@@ -285,7 +296,7 @@ def cluster_update(module, cluster):
                 'id': module.params.get('environment'),
             },
         },
-    }))
+    })))
 
 
 def get_clusters(module):
