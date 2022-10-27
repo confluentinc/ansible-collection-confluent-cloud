@@ -62,7 +62,7 @@ EXAMPLES = """
 
 RETURN = """
 ---
-role_binding:
+role_bindings:
   description: Dictionary of matching role bindings, keyed by role binding id
   returned: success
   type: dict
@@ -96,6 +96,8 @@ from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api impo
 
 
 def canonical_resource(resource):
+    resource['role'] = resource['role_name']
+    del(resource['role_name'])
     return(resource)
 
 
