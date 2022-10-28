@@ -1,0 +1,30 @@
+---
+- name: Create environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: cluster_test_env
+    state: present
+  register: result_env
+
+- name: Create cluster
+  check_mode: False
+  confluent.cloud.cluster:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    state: present
+    environment: "{{ result_env.id }}"
+    name: integration-test-cluster
+    availability: SINGLE_ZONE
+    cloud: GCP
+    region: us-west4
+    kind: Basic
+  register: result_cluster
+  ignore_errors: True
+
+- name: List connectors
+  confluent.cloud.connect_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
