@@ -1,0 +1,174 @@
+---
+- name: Create environement
+  confluent.cloud.environment:
+    name: cluster_test_env
+    state: present
+  register: result_env
+
+
+
+- name: Create environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: cluster_test_env
+    state: present
+  register: result_env
+
+- name: Create cluster
+  check_mode: False
+  confluent.cloud.cluster:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    state: present
+    environment: "{{ result_env.id }}"
+    name: integration-test-cluster
+    availability: SINGLE_ZONE
+    cloud: GCP
+    region: us-west4
+    kind: Standard
+  register: result_cluster
+  ignore_errors: True
+
+- name: Create service account
+  confluent.cloud.service_account:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: connector-test-sa
+    description: Ansible connector test service account
+    state: present
+  register: result_sa
+
+- name: Create role binding
+  confluent.cloud.role_binding:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    resource_uri: "{{ result_cluster.resource_uri | regex_replace('/kafka=.*?$', '') }}"
+    principal: "{{ result_sa.id }}"
+    role: CloudClusterAdmin
+    state: present
+  register: result_rb
+
+- name: Create API key
+  confluent.cloud.api_key:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: "connector-test-key-{{ 1000 | random }}"
+    description: Ansible connector test key
+    owner: "{{ result_sa.id }}"
+    resource: "{{ result_cluster.id }}"
+    state: present
+  register: result_api_key
+
+- name: Create Datagen connector
+  confluent.cloud.connect:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+    connector: DatagenSource
+    kafka_key: "{{ result_api_key.id }}"
+    kafka_secret: "{{ result_api_key.secret }}"
+    props:
+      kafka.auth.mode: KAFKA_API_KEY
+      kafka.topic: pageviews2
+      quickstart: PAGEVIEWS
+      max.interval: "1000"
+      iterations: "100"
+      output.data.format: JSON
+      tasks.max: "1"
+    state: present
+
+- name: Wait for connector instantiation
+  confluent.cloud.connect_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    names: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+  register: result
+  until: "'datagen_source' in result.connectors and result.connectors.datagen_source.status.state=='RUNNING'"
+  retries: 60
+  delay: 10
+
+- name: Pause Datagen connector
+  confluent.cloud.connect:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+    state: pause
+
+- name: Wait for connector pause
+  confluent.cloud.connect_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    names: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+  register: result
+  until: "'datagen_source' in result.connectors and result.connectors.datagen_source.status.state=='PAUSED'"
+  retries: 60
+  delay: 10
+
+- name: Resume Datagen connector
+  confluent.cloud.connect:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+    state: resume
+
+- name: Wait for connector resume
+  confluent.cloud.connect_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    names: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+  register: result
+  until: "'datagen_source' in result.connectors and result.connectors.datagen_source.status.state=='RUNNING'"
+  retries: 60
+  delay: 10
+
+- name: Delete Datagen connector
+  confluent.cloud.connect:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: datagen_source
+    environment: "{{ result_env.id }}"
+    cluster: "{{ result_cluster.id }}"
+    state: absent
+
+- name: Delete service account
+  confluent.cloud.service_account:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ result_sa.id }}"
+    state: absent
+
+- name: Cleanup cluster
+  confluent.cloud.cluster:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    state: absent
+    id: "{{ result_cluster.id }}"
+    environment: "{{ result_env.id }}"
+  ignore_errors: True
+
+- name: Cleanup environment
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ result_env.id }}"
+    state: absent
+  ignore_errors: True
+
+
+
+
+
+
