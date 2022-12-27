@@ -1,14 +1,6 @@
 ---
 - name: Create environement
   confluent.cloud.environment:
-    name: cluster_test_env
-    state: present
-  register: result_env
-
-
-
-- name: Create environement
-  confluent.cloud.environment:
     api_key: '{{ api_key }}'
     api_secret: '{{ api_secret }}'
     name: cluster_test_env
@@ -72,7 +64,7 @@
     kafka_secret: "{{ result_api_key.secret }}"
     props:
       kafka.auth.mode: KAFKA_API_KEY
-      kafka.topic: pageviews2
+      kafka.topic: pageviews
       quickstart: PAGEVIEWS
       max.interval: "1000"
       iterations: "100"

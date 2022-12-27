@@ -11,70 +11,120 @@ __metaclass__ = type
 
 DOCUMENTATION = """
 ---
-module: environment
-short_description: Manage Confluent Cloud Environments
+module: connect
+short_description: Manage Confluent Cloud Connectors
 description:
-  - Manage Confluent Cloud Environments
+  - Manage Confluent Cloud connectors
 version_added: "0.0.1"
 author: "Keith Resar (@keithresar)"
 extends_documentation_fragment:
   - confluent.cloud.confluent
 options:
-  id:
-    description: Environment Id
+  environment:
+    description:
+      - Environment Id.
+  cluster:
+    description:
+      - Cluster Id.
     type: str
   name:
     description:
-      - Environment name.
-      - Mutation after creation requires supplying the environment id.
+      - Unique connector name
+    type: str
+  kafka_key:
+    description:
+      - Kafka API user key with access to the topics this connector will access.
+      - Note this is different than the Cloud Key which is used to mutate Confluent
+        Cloud resources.
+    type: str
+  kafka_secret:
+    description:
+      - Kafka API user secret with access to the topics this connector will access.
+      - Note this is different than the Cloud Key which is used to mutate Confluent
+        Cloud resources.
+    type: str
+  connector:
+    description:
+      - The connector class name. E.g. DatagenSource, BigQuerySink, GcsSink, etc.
     type: str
   state:
     description:
-      - If `absent`, the environment and all objects (clusters, service accounts) will be removed.
-        Note that absent will not cause Environment to fail if the Environment does not exist.
-      - If `present`, the environment will be created.
+      - If `absent`, the connector will be removed.
+      - If `present`, the connector will be created.
+      - If `pause`, the connector will be paused.
+      - If `resume`, the connector will be resumed.
     default: present
     choices:
       - absent
       - present
+      - pause
+      - resume
+    type: str
+  props:
+    description:
+      - Dictionary of connector-specific properties.  These properties vary by connector
     type: str
 """
 
 EXAMPLES = """
-- name: Create new environment
-  confluent.cloud.environment:
-    name: test_env
+- name: Create Datagen connector
+  confluent.cloud.connect:
+    name: datagen_source
+    environment: env-f3a90de
+    cluster: lkc-6wkr2
+    connector: DatagenSource
+    kafka_key: QMQ6AOEJISDAG6FI
+    kafka_secret: aeXANrbGCLqzfl6Q7k2Ygi5cSrS+F97TThNTZMSP0AvzF+g8l4iG3PcDJleVrHD8
+    props:
+      kafka.auth.mode: KAFKA_API_KEY
+      kafka.topic: pageviews
+      quickstart: PAGEVIEWS
+      max.interval: "1200"
+      iterations: "100000000"
+      output.data.format: JSON
+      tasks.max: "1"
     state: present
-- name: Delete existing environment by name
-  confluent.cloud.environment:
-    name: test_env
+- name: Pause existing connector by name
+  confluent.cloud.connect:
+    environment: env-f3a90de
+    cluster: lkc-6wkr2
+    name: datagen_source
+    state: pause
+- name: Resume existing connector by name
+  confluent.cloud.connect:
+    environment: env-f3a90de
+    cluster: lkc-6wkr2
+    name: datagen_source
+    state: resume
+- name: Delete existing connector by name
+  confluent.cloud.connect:
+    environment: env-f3a90de
+    cluster: lkc-6wkr2
+    name: datagen_source
     state: absent
-- name: Modify existing environment by Id
-  confluent.cloud.environment:
-    id: env-dsh38dja
-    name: test_env_new
-    state: present
 """
 
 RETURN = """
 ---
-display_name:
-  description: Environment name
+name:
+  description: Connector name
   type: str
   returned: success
-id:
-  description: Environment id
+config:
+  description: Dict showing the connector's configuration parameters.  These vary by connector class
   type: str
   returned: success
-  sample: env-9v5v5
-resource_uri:
-  description: Globally unique URI for resource
+status:
+  description: Dict showing the status of the connector
   type: str
   returned: success
-  sample: crn://confluent.cloud/organization=6830dbfe-5057-4e65-ae2e-f6a090640ec0/environment=env-nvm8yz
-metadata:
-  description: Environment metadata, including create timestamp and updated timestamp
-  type: dict
+tasks:
+  description: Dict showing the status of each connector task
+  type: str
+  returned: success
+type:
+  description: Connector type (either source or sink)
+  type: str
   returned: success
 """
 
@@ -86,94 +136,145 @@ from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api impo
 
 
 def canonical_resource(resource):
-    resource['resource_uri'] = resource['metadata']['resource_name']
-    del(resource['metadata']['resource_name'])
     return(resource)
 
 
-def environment_remove(module, resource_id):
+def connect_remove(module, resource_id):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/org/v2/environments",
+        resource_path="/connect/v1/environments/%s/clusters/%s/connectors" % (
+            module.params.get('environment'),
+            module.params.get('cluster')
+        ),
         resource_key_id=resource_id
     )
 
-    return(confluent.absent({'environment': module.params.get('environment')}))
+    return(confluent.absent())
 
 
-def environment_create(module):
+def connect_pause(module, resource_id):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/org/v2/environments",
+        resource_path="/connect/v1/environments/%s/clusters/%s/connectors/%s/pause" % (
+            module.params.get('environment'),
+            module.params.get('cluster'),
+            module.params.get('name'),
+        ),
     )
 
-    return(canonical_resource(confluent.create({'display_name': module.params.get('name')})))
+    return(confluent.query(method='PUT'))
 
 
-def environment_update(module, environment):
+def connect_resume(module, resource_id):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/org/v2/environments",
-        resource_key_id=environment['id']
+        resource_path="/connect/v1/environments/%s/clusters/%s/connectors/%s/resume" % (
+            module.params.get('environment'),
+            module.params.get('cluster'),
+            module.params.get('name'),
+        ),
     )
 
-    """
-    resource = confluent.update(environment, {
-        'display_name': module.params.get('name'),
-    })
-    resource['resource_uri'] = resource['metadata']['resource_name']
+    return(confluent.query(method='PUT'))
 
-    return(resource)
-    """
-    return(canonical_resource(confluent.update(environment, {
-        'display_name': module.params.get('name'),
+
+def connect_create(module):
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/connect/v1/environments/%s/clusters/%s/connectors" % (
+            module.params.get('environment'),
+            module.params.get('cluster')
+        )
+    )
+
+    config_base = {
+            'name': module.params.get('name'),
+            'kafka.api.key': module.params.get('kafka_key'),
+            'kafka.api.secret': module.params.get('kafka_secret'),
+            'connector.class': module.params.get('connector')
+    }
+    config = { **config_base, **module.params.get('props') }
+
+    return(canonical_resource(confluent.create({
+        'name': module.params.get('name'),
+        'config': config,
     })))
 
 
-def get_environments(module):
+def connect_update(module, connector):
     confluent = AnsibleConfluent(
         module=module,
-        resource_path="/org/v2/environments",
+        resource_path="/connect/v1/environments/%s/clusters/%s/connectors/%s" % (
+            module.params.get('environment'),
+            module.params.get('cluster'),
+            module.params.get('name'),
+        ),
+        resource_key_id='config',
+        resource_update_method='PUT',
     )
 
-    resources = confluent.query(data={'page_size': 100})
+    config_base = {
+            'name': module.params.get('name'),
+            'kafka.api.key': module.params.get('kafka_key'),
+            'kafka.api.secret': module.params.get('kafka_secret'),
+            'connector.class': module.params.get('connector')
+    }
+    config = { **config_base, **module.params.get('props') }
 
-    if 'data' in resources:
-        return(resources['data'])
+    return(canonical_resource(confluent.update(connector['info']['config'],config,required=config)))
+
+
+def get_connectors(module):
+    confluent = AnsibleConfluent(
+        module=module,
+        resource_path="/connect/v1/environments/%s/clusters/%s/connectors" % (
+            module.params.get('environment'),
+            module.params.get('cluster'),
+        )
+    )
+
+    resources = confluent.query(data={'expand': 'status,info', 'page_size': 100})
+
+    return(resources)
+
+
+def connect_process(module):
+    # Get existing connect if it exists
+    connectors = get_connectors(module)
+    if module.params.get('name') in connectors:
+        connector = connectors[module.params.get('name')]
     else:
-        return([])
+        connector = None
 
-
-def environment_process(module):
-    # Get existing environment if it exists
-    environments = get_environments(module)
-    if module.params.get('id') and len([e for e in environments if e['id'] in module.params.get('id')]):
-        environment = [e for e in environments if e['id'] in module.params.get('id')][0]
-    elif module.params.get('name') and len([e for e in environments if e['display_name'] in module.params.get('name')]):
-        environment = [e for e in environments if e['display_name'] in module.params.get('name')][0]
-    else:
-        environment = None
-
-    # Manage environment removal
-    if module.params.get('state') == 'absent' and not environment:
+    # Manage connect removal
+    if module.params.get('state') == 'absent' and not connector:
         return({"changed": False})
-    elif module.params.get('state') == 'absent' and environment:
-        return(environment_remove(module, environment['id']))
+    elif module.params.get('state') == 'absent' and connector:
+        return(connect_remove(module, connector['info']['name']))
+    elif module.params.get('state') == 'pause' and connector:
+        return(connect_pause(module, connector['info']['name']))
+    elif module.params.get('state') == 'resume' and connector:
+        return(connect_resume(module, connector['info']['name']))
 
-    # Create environment
-    elif module.params.get('state') == 'present' and not environment:
-        return(environment_create(module))
+    # Create connect
+    elif module.params.get('state') == 'present' and not connector:
+        return(connect_create(module))
 
     # Check for update
     else:
-        return(environment_update(module, environment))
+        return(connect_update(module, connector))
 
 
 def main():
     argument_spec = confluent_argument_spec()
-    argument_spec['id'] = dict(type='str')
-    argument_spec['name'] = dict(type='str')
-    argument_spec['state'] = dict(default='present', choices=['present', 'absent'])
+    argument_spec['environment'] = dict(type='str', required=True)
+    argument_spec['cluster'] = dict(type='str', required=True)
+    argument_spec['name'] = dict(type='str', required=True)
+    argument_spec['state'] = dict(default='present', choices=['present', 'absent', 'pause', 'resume'])
+    argument_spec['kafka_key'] = dict(type='str')
+    argument_spec['kafka_secret'] = dict(type='str', no_log=True)
+    argument_spec['connector'] = dict(type='str')
+    argument_spec['props'] = dict(type='dict')
 
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -181,9 +282,9 @@ def main():
     )
 
     try:
-        module.exit_json(**environment_process(module))
+        module.exit_json(**connect_process(module))
     except Exception as e:
-        module.fail_json(msg='failed to process environment, error: %s' %
+        module.fail_json(msg='failed to process connect, error: %s' %
                          (to_native(e)), exception=traceback.format_exc())
 
 

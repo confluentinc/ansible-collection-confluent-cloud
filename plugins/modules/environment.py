@@ -117,14 +117,6 @@ def environment_update(module, environment):
         resource_key_id=environment['id']
     )
 
-    """
-    resource = confluent.update(environment, {
-        'display_name': module.params.get('name'),
-    })
-    resource['resource_uri'] = resource['metadata']['resource_name']
-
-    return(resource)
-    """
     return(canonical_resource(confluent.update(environment, {
         'display_name': module.params.get('name'),
     })))

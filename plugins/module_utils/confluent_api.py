@@ -188,6 +188,7 @@ class AnsibleConfluent:
         self.module.fail_json(
             msg='Failure while calling the Confluent Cloud API with %s for "%s".' % (method, path),
             fetch_url_info=info,
+            data=data
         )
 
     def query(self, method="GET", data=None):
@@ -241,6 +242,8 @@ class AnsibleConfluent:
 
         delta_state = self._delta_state(cur_state, target_state)
 
+        #if 'connector.class' in cur_state:  
+        #    self.module.fail_json({'cs': cur_state, 'ts': target_state, 'req': required, 'ds': delta_state})
         if len(delta_state.keys()):
             #self.module.fail_json({'keys': delta_state,'cur':cur_state,'target':target_state})
             resource['changed'] = True
