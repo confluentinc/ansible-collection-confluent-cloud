@@ -14,4 +14,4 @@ repository: "https://github.com/confluentinc/ansible-collection-confluent-cloud"
 tags:
   - cloud
   - confluent
-version: 0.0.1
+version: 0.1.0
