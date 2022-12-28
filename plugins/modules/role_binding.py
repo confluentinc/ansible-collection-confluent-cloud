@@ -27,9 +27,17 @@ options:
   resource_uri:
     description:
       - URI (crn://) associated with the resource in which to search
+      - Note that the `crn` URI associated with some resources may need to be modified to be
+        accepted as a as the `resource_uri`.  Review examples for how to modify the cluster
+        `crn`.
     type: str
   role:
-    description: Role
+    description: 
+      - Role.  `resource_uri` may change based on the scope of the role being added.
+      - Available roles are `OrganizationAdmin`, `EnvironmentAdmin`, `CloudClusterAdmin`,
+        `Operator`, `NetworkAdmin`, `MetricsViewer`, `ResourceOwner`, `DeveloperManage`,
+        `DeveloperRead`, `DeveloperWrite`, and `KsqlAdmin`.  
+        [View details on roles here](https://docs.confluent.io/cloud/current/access-management/access-control/cloud-rbac.html#ccloud-rbac-roles).
     type: str
   principal:
     description: Role
@@ -67,6 +75,20 @@ EXAMPLES = """
 - name: Delete role_binding (by id)
     id: rb-jhz28
     state: absent
+
+# Modifying crn associated with the cluster for use in role binding
+- name: Get cluster
+  confluent.cloud.cluster_info:
+    environment: env-12m16j
+    ids:
+      - lkc-7yxkd2
+  register: result
+- name: Create role binding
+  confluent.cloud.role_binding:
+    resource_uri: "{{ result.resource_uri | regex_replace('/kafka=.*?$', '') }}"
+    principal: sa-j31z28
+    role: CloudClusterAdmin
+    state: present
 """
 
 RETURN = """
