@@ -16,6 +16,7 @@ module: role_binding
 short_description: Manage Confluent Cloud role bindings
 description:
   - Manage Confluent Cloud role bindings within a Confluent Cloud environment.
+  - Note that granular Kafka RBAC is available only on Standard and Dedicated clusters.
 version_added: "0.0.1"
 author: "Keith Resar (@keithresar)"
 extends_documentation_fragment:
