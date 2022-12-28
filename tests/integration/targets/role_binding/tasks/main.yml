@@ -1,0 +1,64 @@
+---
+
+
+- name: Create environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: rolebinding-test
+    state: present
+  register: result_env
+
+- name: Create service account
+  confluent.cloud.service_account:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: rolebinding-test
+    description: role binding test 1
+    state: present
+  register: result_sa
+
+- name: Create role binding
+  confluent.cloud.role_binding:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    resource_uri: "{{ result_env.resource_uri }}"
+    principal: "{{ result_sa.id }}"
+    role: EnvironmentAdmin
+    state: present
+  register: result_rb
+
+- name: Remove role binding
+  confluent.cloud.role_binding:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    resource_uri: "{{ result_env.resource_uri }}"
+    id: "{{ result_rb.id }}"
+    state: absent
+
+- name: Remove service account
+  confluent.cloud.service_account:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ result_sa.id }}"
+    state: absent
+  register: result_rb_removed
+
+- name: Remove environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ result_env.id }}"
+    state: absent
+
+
+- name: Verify rolebinding created
+  ansible.builtin.assert:
+    that:
+      - result_rb.changed
+      - result_rb.role=='EnvironmentAdmin'
+
+- name: Verify rolebinding remove
+  ansible.builtin.assert:
+    that:
+      - result_rb_removed.changed

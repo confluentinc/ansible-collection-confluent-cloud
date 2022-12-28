@@ -6,13 +6,12 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import re
 import random
 import time
 import base64
 import urllib
 
-from ansible.module_utils._text import to_native, to_text
+from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import env_fallback
 from ansible.module_utils.urls import fetch_url
 
@@ -95,6 +94,7 @@ class AnsibleConfluent:
         self.headers = {
             "Authorization": "Basic %s" % (base64.standard_b64encode(auth.encode()).decode()),
             "User-Agent": CONFLUENT_USER_AGENT,
+            "Content-Type": "application/json",
             "Accept": "application/json",
         }
 
@@ -105,7 +105,6 @@ class AnsibleConfluent:
         pass
 
     def api_next_page(self, uri):
-
         info = dict()
         resp_body = None
         for retry in range(0, self.module.params["api_retries"]):
@@ -138,13 +137,13 @@ class AnsibleConfluent:
             return([])
 
     def api_query(self, path, method="GET", data=None):
-
-        if method == "GET" and data:
-            data_encoded = data.copy()
+        params = ''
+        if method in ('GET', 'DELETE') and data:
             try:
-                data = urllib.urlencode(data_encoded)
+                params = '?' + urllib.urlencode(data)
             except AttributeError:
-                data = urllib.parse.urlencode(data_encoded)
+                params = '?' + urllib.parse.urlencode(data)
+            data = None
         else:
             data = self.module.jsonify(data)
 
@@ -153,7 +152,7 @@ class AnsibleConfluent:
         for retry in range(0, self.module.params["api_retries"]):
             resp, info = fetch_url(
                 self.module,
-                self.module.params["api_endpoint"] + path,
+                self.module.params["api_endpoint"] + path + params,
                 method=method,
                 data=data,
                 headers=self.headers,
@@ -186,103 +185,13 @@ class AnsibleConfluent:
         self.module.fail_json(
             msg='Failure while calling the Confluent Cloud API with %s for "%s".' % (method, path),
             fetch_url_info=info,
+            data=data
         )
 
-#    def query_filter_list_by_name(
-#        self,
-#        path,
-#        key_name,
-#        result_key,
-#        param_key=None,
-#        key_id=None,
-#        query_params=None,
-#        get_details=False,
-#        fail_not_found=False,
-#    ):
-#        param_value = self.module.params.get(param_key or key_name)
-#
-#        found = dict()
-#        for resource in self.query_list(path=path, result_key=result_key, query_params=query_params):
-#            if resource.get(key_name) == param_value:
-#                if found:
-#                    self.module.fail_json(msg="More than one record with name=%s found. " "Use multiple=yes if module supports it." % param_value)
-#                found = resource
-#        if found:
-#            if get_details:
-#                return self.query_by_id(resource_id=found[key_id])
-#            else:
-#                return found
-#
-#        elif fail_not_found:
-#            self.module.fail_json(msg="No Resource %s with %s found: %s" % (path, key_name, param_value))
-#
-#        return dict()
-
-#    def query_filter_list(self):
-#        # Returns a single dict representing the resource queryied by name
-#        return self.query_filter_list_by_name(
-#            key_name=self.resource_key_name,
-#            key_id=self.resource_key_id,
-#            get_details=self.resource_get_details,
-#            path=self.resource_path,
-#            result_key=self.resource_result_key_plural,
-#        )
-
-#    def query_by_id(self, resource_id=None, path=None, result_key=None):
-#        # Defaults
-#        path = path or self.resource_path
-#
-#        resource = self.api_query(path="%s%s" % (path, "/" + resource_id if resource_id else resource_id))
-#        if resource:
-#            return resource[result_key]
-#
-#        return dict()
-
-    def query(self):
+    def query(self, method="GET", data=None):
         # Returns a single dict representing the resource
-        resources = self.api_query(path=self.resource_path)
+        resources = self.api_query(path=self.resource_path, method=method, data=data)
         return(resources)
-
-#    def query_list(self, path=None, result_key=None, query_params=None):
-#        # Defaults
-#        path = path or self.resource_path
-#        result_key = result_key or self.resource_result_key_plural
-#
-#        resources = self.api_query(path=path, data=query_params)
-#       #return resources[result_key] if resources else []
-#       #self.module.fail_json(
-#       #    msg='',
-#       #    fetch_url_info=resources,
-#       #)
-#        return resources['data'] if resources else []
-
-#    """
-#    def wait_for_state(self, resource, key, state, cmp="="):
-#        for retry in range(0, 30):
-#            resource = self.query_by_id(resource_id=resource[self.resource_key_id])
-#            if cmp == "=":
-#                if key not in resource or resource[key] == state or not resource[key]:
-#                    break
-#            else:
-#                if key not in resource or resource[key] != state or not resource[key]:
-#                    break
-#            backoff(retry=retry)
-#        else:
-#            self.module.fail_json(msg="Wait for %s to become %s timed out" % (key, state))
-#
-#        return resource
-#    """
-
-#    def create_or_update(self):
-#        resource = self.query()
-#        if not resource:
-#            resource = self.create()
-#        else:
-#            resource = self.update(resource)
-#        return resource
-
-#    def present(self):
-#        self.get_result(self.create_or_update())
 
     def create(self, data):
         resource = dict()
@@ -296,29 +205,62 @@ class AnsibleConfluent:
         resource['changed'] = True
         return(resource)
 
-    def update(self, cur_state, target_state):
+    def _merge_dicts(self, tgt, enhancer):
+        for key, val in enhancer.items():
+            if key not in tgt:
+                tgt[key] = val
+                continue
+
+            if isinstance(val, dict):
+                if not isinstance(tgt[key], dict):
+                    continue
+                self._merge_dicts(tgt[key], val)
+            else:
+                tgt[key] = val
+        return(tgt)
+
+    def _delta_state(self, cur, target):
+        delta = {}
+        for key, val in target.items():
+            if key not in cur:
+                # assume if key doesn't exist in cur state then it optional
+                pass
+            elif isinstance(target[key], (float, int, str, list, tuple)) and cur[key] != val:
+                delta[key] = val
+            elif isinstance(val, dict):
+                o = self._delta_state(cur[key], val)
+                if len(o.keys()):
+                    delta[key] = o
+        return(delta)
+
+    def update(self, cur_state, target_state, required=None):
         resource = {'changed': False}
 
-        for key in target_state.keys():
-            if key not in cur_state or cur_state[key] != target_state[key]:
-                resource['changed'] = True
-                break
+        delta_state = self._delta_state(cur_state, target_state)
+
+        if len(delta_state.keys()):
+            resource['changed'] = True
+            if required:
+                delta_state = self._merge_dicts(delta_state, required)
 
         if resource["changed"]:
             if not self.module.check_mode:
                 resource = self.api_query(
                     path="%s/%s" % (self.resource_path, self.resource_key_id),
                     method=self.resource_update_method,
-                    data=target_state,
+                    data=delta_state,
                 )
                 resource['changed'] = True
+            return(resource)
+        else:
+            cur_state['changed'] = False
+            return(cur_state)
 
-        return(resource)
-
-    def absent(self):
+    def absent(self, data=None):
         if not self.module.check_mode:
             self.api_query(
                 path="%s/%s" % (self.resource_path, self.resource_key_id),
                 method="DELETE",
+                data=data,
             )
         return({'changed': True, 'id': self.resource_key_id})

@@ -1,0 +1,39 @@
+---
+
+- name: Create environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: role_bindings_info_test
+    state: present
+  register: result_env
+
+- name: List all role bindings
+  confluent.cloud.role_binding_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    resource_uri: "{{ result_env.resource_uri }}"
+
+- name: Filter by role
+  confluent.cloud.role_binding_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    resource_uri: "{{ result_env.resource_uri }}"
+    roles:
+      - EnvironmentAdmin
+
+- name: Filter by principal
+  confluent.cloud.role_binding_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    resource_uri: "{{ result_env.resource_uri }}"
+    principals:
+      - User:u-l6xn83
+
+- name: Remove environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: role_bindings_info_test
+    state: absent
+

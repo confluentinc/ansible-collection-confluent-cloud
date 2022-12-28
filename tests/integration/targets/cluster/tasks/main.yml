@@ -1,0 +1,80 @@
+---
+
+- name: Create environement
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: cluster_test_env
+    state: present
+  register: result_env
+
+- name: Create cluster
+  check_mode: False
+  confluent.cloud.cluster:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    state: present
+    environment: "{{ result_env.id }}"
+    name: integration-test-cluster
+    availability: SINGLE_ZONE
+    cloud: GCP
+    region: us-west4
+    kind: Basic
+  register: result_cluster_create
+  ignore_errors: True
+
+- name: Update cluster
+  check_mode: False
+  confluent.cloud.cluster:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    state: present
+    id: "{{ result_cluster_create.id }}"
+    environment: "{{ result_env.id }}"
+    name: integration-test-cluster-rename
+    availability: SINGLE_ZONE
+    cloud: GCP
+    region: us-west4
+    kind: Basic
+  register: result_cluster_update
+  ignore_errors: True
+
+- name: Cleanup cluster
+  check_mode: False
+  confluent.cloud.cluster:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    state: absent
+    id: "{{ result_cluster_create.id }}"
+    environment: "{{ result_env.id }}"
+  register: result_cluster_absent
+  ignore_errors: True
+
+- name: Cleanup environment
+  confluent.cloud.environment:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: cluster_test_env
+    state: absent
+
+- name: Verify cluster created
+  ansible.builtin.assert:
+    that:
+      - result_cluster_create.changed
+      - result_cluster_create.id
+      - result_cluster_create.spec.display_name=='integration-test-cluster'
+      - result_cluster_create.spec.cloud=='GCP'
+      - result_cluster_create.spec.region=='us-west4'
+      - result_cluster_create.spec.config.kind=='Basic'
+
+- name: Verify cluster updated
+  ansible.builtin.assert:
+    that:
+      - result_cluster_update.changed
+      - result_cluster_update.spec.display_name=='integration-test-cluster-rename'
+      - result_cluster_update.spec.config.kind=='Basic'
+
+- name: Verify cluster removed
+  ansible.builtin.assert:
+    that:
+      - result_cluster_absent.changed

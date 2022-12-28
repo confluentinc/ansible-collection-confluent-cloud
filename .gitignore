@@ -1,4 +1,7 @@
 *.sw?
 *.pyc
-python_310
-sratch
+python_*
+scratch
+tests/integration/integration_config.yml
+tests/integration/inventory
+tests/output

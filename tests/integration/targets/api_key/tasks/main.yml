@@ -1,0 +1,49 @@
+---
+
+- name: Create service account
+  confluent.cloud.service_account:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: ansible-integration-test
+    description: Service account integration test
+    state: present
+  register: sa_create_result
+
+- name: Create API key
+  confluent.cloud.api_key:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    name: ansible-integration-test
+    description: API key integration test
+    owner: "{{ sa_create_result.id }}"
+    state: present
+  register: create_result
+
+- name: List all API keys
+  confluent.cloud.api_key_info:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+  register: list_result
+
+- name: Remove created api_key
+  confluent.cloud.api_key:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ create_result.id }}"
+    state: absent
+  register: remove_result
+
+- name: Remove created service account
+  confluent.cloud.service_account:
+    api_key: '{{ api_key }}'
+    api_secret: '{{ api_secret }}'
+    id: "{{ sa_create_result.id }}"
+    state: absent
+  register: sa_remove_result
+
+- name: Verify API keys
+  ansible.builtin.assert:
+    that:
+      - create_result.id in list_result.api_keys
+      - create_result.changed
+      - remove_result.changed

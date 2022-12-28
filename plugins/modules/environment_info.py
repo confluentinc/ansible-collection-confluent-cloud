@@ -56,7 +56,7 @@ environments:
   returned: success
   type: dict
   contains:
-    dplay_name:
+    display_name:
       description: Environment name
       type: str
       returned: success
@@ -65,6 +65,11 @@ environments:
       type: str
       returned: success
       sample: env-9v5v5
+    resource_uri:
+      description: Globally unique URI for resource
+      type: str
+      returned: success
+      sample: crn://confluent.cloud/organization=6830dbfe-5057-4e65-ae2e-f6a090640ec0/environment=env-nvm8yz
     metadata:
       description: Environment metadata, including create timestamp and updated timestamp
       type: dict
@@ -78,13 +83,19 @@ from ansible.module_utils._text import to_native
 from ansible_collections.confluent.cloud.plugins.module_utils.confluent_api import AnsibleConfluent, confluent_argument_spec
 
 
+def canonical_resource(resource):
+    resource['resource_uri'] = resource['metadata']['resource_name']
+    del(resource['metadata']['resource_name'])
+    return(resource)
+
+
 def get_environments_info(module):
     confluent = AnsibleConfluent(
         module=module,
         resource_path="/org/v2/environments",
     )
 
-    resources = confluent.query()
+    resources = confluent.query(data={'page_size': 100})
 
     if module.params.get('ids'):
         environments = [e for e in resources['data'] if e['id'] in module.params.get('ids')]
@@ -93,7 +104,7 @@ def get_environments_info(module):
     else:
         environments = resources['data']
 
-    return({e['id']: e for e in environments})
+    return({'environments': {e['id']: canonical_resource(e) for e in environments}})
 
 
 def main():
