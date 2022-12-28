@@ -169,9 +169,6 @@ class AnsibleConfluent:
             # be polite.  Use exponential backoff plus a little bit of randomness
             backoff(retry=retry, retry_max_delay=self.module.params["api_retry_max_delay"])
 
-        #if method!='GET':
-        #    self.module.fail_json({'uri': self.module.params["api_endpoint"] + path + params, 'data': data})
-
         # Success with content
         if info["status"] in (200, 201, 202):
             # Request subsequent page if next
@@ -226,7 +223,6 @@ class AnsibleConfluent:
         delta = {}
         for key, val in target.items():
             if key not in cur:
-                #delta[key] = val
                 # assume if key doesn't exist in cur state then it optional
                 pass
             elif isinstance(target[key], (float, int, str, list, tuple)) and cur[key] != val:
@@ -242,10 +238,7 @@ class AnsibleConfluent:
 
         delta_state = self._delta_state(cur_state, target_state)
 
-        #if 'connector.class' in cur_state:  
-        #    self.module.fail_json({'cs': cur_state, 'ts': target_state, 'req': required, 'ds': delta_state})
         if len(delta_state.keys()):
-            #self.module.fail_json({'keys': delta_state,'cur':cur_state,'target':target_state})
             resource['changed'] = True
             if required:
                 delta_state = self._merge_dicts(delta_state, required)

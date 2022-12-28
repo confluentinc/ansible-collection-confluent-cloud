@@ -8,7 +8,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import re
 
 DOCUMENTATION = """
 ---
@@ -32,12 +31,13 @@ options:
         accepted as a as the `resource_uri`.  Review examples for how to modify the cluster
         `crn`.
     type: str
+    required: true
   role:
-    description: 
+    description:
       - Role.  `resource_uri` may change based on the scope of the role being added.
       - Available roles are `OrganizationAdmin`, `EnvironmentAdmin`, `CloudClusterAdmin`,
         `Operator`, `NetworkAdmin`, `MetricsViewer`, `ResourceOwner`, `DeveloperManage`,
-        `DeveloperRead`, `DeveloperWrite`, and `KsqlAdmin`.  
+        `DeveloperRead`, `DeveloperWrite`, and `KsqlAdmin`.
         [View details on roles here](https://docs.confluent.io/cloud/current/access-management/access-control/cloud-rbac.html#ccloud-rbac-roles).
     type: str
   principal:
@@ -74,17 +74,17 @@ EXAMPLES = """
     resource_uri: "{{ result.resource_uri }}"
     state: absent
 - name: Delete role_binding (by id)
+  confluent.cloud.role_binding:
     id: rb-jhz28
     state: absent
 
-# Modifying crn associated with the cluster for use in role binding
 - name: Get cluster
   confluent.cloud.cluster_info:
     environment: env-12m16j
     ids:
       - lkc-7yxkd2
   register: result
-- name: Create role binding
+- name: Create role binding. Note modifying crn associated with the cluster for use in role binding
   confluent.cloud.role_binding:
     resource_uri: "{{ result.resource_uri | regex_replace('/kafka=.*?$', '') }}"
     principal: sa-j31z28
@@ -115,6 +115,7 @@ metadata:
   returned: success
 """
 
+import re
 import traceback
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
@@ -168,7 +169,10 @@ def role_binding_process(module):
 
     if module.params.get('id') and len([rb for rb in role_bindings if rb['id'] == module.params.get('id')]):
         role_binding = [rb for rb in role_bindings if rb['id'] == module.params.get('id')][0]
-    elif module.params.get('role') and module.params.get('principal') and len([rb for rb in role_bindings if rb['role_name'] == module.params.get('role') and rb['principal'] == module.params.get('principal')]):
+    elif (module.params.get('role') and module.params.get('principal')
+          and len([rb for rb in role_bindings
+                  if (rb['role_name'] == module.params.get('role')
+                      and rb['principal'] == module.params.get('principal'))])):
         role_binding = [rb for rb in role_bindings if rb['role_name'] == module.params.get('role') and rb['principal'] == module.params.get('principal')][0]
     else:
         role_binding = None
@@ -202,9 +206,8 @@ def main():
     )
 
     if module.params.get('principal'):
-        if re.match("(u|sa)",module.params.get('principal')):
+        if re.match("(u|sa)", module.params.get('principal')):
             module.params['principal'] = "User:" + module.params.get('principal')
-
 
     try:
         module.exit_json(**role_binding_process(module))

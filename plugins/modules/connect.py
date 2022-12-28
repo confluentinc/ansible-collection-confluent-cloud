@@ -23,14 +23,18 @@ options:
   environment:
     description:
       - Environment Id.
+    type: str
+    required: true
   cluster:
     description:
       - Cluster Id.
     type: str
+    required: true
   name:
     description:
       - Unique connector name
     type: str
+    required: true
   kafka_key:
     description:
       - Kafka API user key with access to the topics this connector will access.
@@ -63,7 +67,7 @@ options:
   props:
     description:
       - Dictionary of connector-specific properties.  These properties vary by connector
-    type: str
+    type: dict
 """
 
 EXAMPLES = """
@@ -188,12 +192,12 @@ def connect_create(module):
     )
 
     config_base = {
-            'name': module.params.get('name'),
-            'kafka.api.key': module.params.get('kafka_key'),
-            'kafka.api.secret': module.params.get('kafka_secret'),
-            'connector.class': module.params.get('connector')
+        'name': module.params.get('name'),
+        'kafka.api.key': module.params.get('kafka_key'),
+        'kafka.api.secret': module.params.get('kafka_secret'),
+        'connector.class': module.params.get('connector')
     }
-    config = { **config_base, **module.params.get('props') }
+    config = {**config_base, **module.params.get('props')}
 
     return(canonical_resource(confluent.create({
         'name': module.params.get('name'),
@@ -214,14 +218,14 @@ def connect_update(module, connector):
     )
 
     config_base = {
-            'name': module.params.get('name'),
-            'kafka.api.key': module.params.get('kafka_key'),
-            'kafka.api.secret': module.params.get('kafka_secret'),
-            'connector.class': module.params.get('connector')
+        'name': module.params.get('name'),
+        'kafka.api.key': module.params.get('kafka_key'),
+        'kafka.api.secret': module.params.get('kafka_secret'),
+        'connector.class': module.params.get('connector')
     }
-    config = { **config_base, **module.params.get('props') }
+    config = {**config_base, **module.params.get('props')}
 
-    return(canonical_resource(confluent.update(connector['info']['config'],config,required=config)))
+    return(canonical_resource(confluent.update(connector['info']['config'], config, required=config)))
 
 
 def get_connectors(module):
@@ -271,7 +275,7 @@ def main():
     argument_spec['cluster'] = dict(type='str', required=True)
     argument_spec['name'] = dict(type='str', required=True)
     argument_spec['state'] = dict(default='present', choices=['present', 'absent', 'pause', 'resume'])
-    argument_spec['kafka_key'] = dict(type='str')
+    argument_spec['kafka_key'] = dict(type='str', no_log=False)
     argument_spec['kafka_secret'] = dict(type='str', no_log=True)
     argument_spec['connector'] = dict(type='str')
     argument_spec['props'] = dict(type='dict')

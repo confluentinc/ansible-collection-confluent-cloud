@@ -24,6 +24,7 @@ options:
     description:
       - URI (crn://) associated with the resource in which to search
     type: str
+    required: true
   roles:
     description:
       - List of roles to filter results by
